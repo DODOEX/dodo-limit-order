@@ -3,14 +3,13 @@
     SPDX-License-Identifier: Apache-2.0
 */
 
-pragma solidity 0.6.9;
+pragma solidity 0.8.4;
 
-import {IDODOApproveProxy} from "../SmartRoute/DODOApproveProxy.sol";
-import {IERC20} from "../intf/IERC20.sol";
-import {SafeMath} from "../lib/SafeMath.sol";
-import {SafeERC20} from "../lib/SafeERC20.sol";
-import {EIP712} from "../external/utils/draft-EIP712.sol";
-import {ECDSA} from "../external/utils/ECDSA.sol";
+import {IERC20} from "./intf/IERC20.sol";
+import {SafeMath} from "./lib/SafeMath.sol";
+import {SafeERC20} from "./lib/SafeERC20.sol";
+import {EIP712} from "./external/draft-EIP712.sol";
+import {ECDSA} from "./external/ECDSA.sol";
 
 /**
  * @title DODOLimitOrder
@@ -25,10 +24,10 @@ contract DODOLimitOrder is EIP712("DODO Limit Order Protocol", "1"){
         address takerToken;
         uint256 makerAmount;
         uint256 takerAmount;
-        //uint256 takerTokenFeeAmount;
+        uint256 takerTokenFeeAmount;
         address maker;
         address taker;
-        //address feeRecipient;
+        address feeRecipient;
         uint256 expiration;
         uint256 salt;
     }
@@ -36,73 +35,53 @@ contract DODOLimitOrder is EIP712("DODO Limit Order Protocol", "1"){
     // ============ Storage ============
     mapping(bytes32 => uint256) public _FILLED_TAKER_AMOUNT_;
 
-
-    //TODO:
     bytes32 constant public LIMIT_ORDER_TYPEHASH = keccak256(
-        "Order(address makerToken,address takerToken,uint256 makerAmount,uint256 takerAmount,address maker,address taker,uint256 expiration,uint256 salt)"
+        "LimitOrder(address makerToken,address takerToken,uint256 makerAmount,uint256 takerAmount,uint256 takerTokenFeeAmount,address maker,address taker,address feeRecipient,uint256 expiration,uint256 salt)"
     );
     
     // ============ Events =============
+    event LimitOrderFilled(address indexed maker, address indexed taker, bytes32 orderHash, uint256 curTakerFillAmount, uint256 curMakerFillAmount);
 
     function fillLimitOrder(
         LimitOrder memory order,
         bytes memory signature,
-        uint256 takingMaxAmount,
-        uint256 thresholdMakerAmount
-    ) external returns(uint256, uint256) {
-        return fillLimitOrderTo(order, signature, takingMaxAmount, thresholdMakerAmount, msg.sender);
-    }
-
-    function fillLimitOrderTo(
-        LimitOrder memory order,
-        bytes memory signature,
-        uint256 takingMaxAmount,
+        uint256 takerFillAmount,
         uint256 thresholdMakerAmount,
-        address receiver
-    ) public returns(uint256, uint256) {
+        bytes memory takerInteraction
+    ) public returns(uint256 curTakerFillAmount, uint256 curMakerFillAmount) {
         bytes32 orderHash = _orderHash(order);
         uint256 filledTakerAmount = _FILLED_TAKER_AMOUNT_[orderHash];
 
-        require(filledTakerAmount < order.takerAmount, "ALREADY_FILLED");
+        require(filledTakerAmount < order.takerAmount, "DLOP: ALREADY_FILLED");
         //TODO: takerRegistry
-        require(order.taker == tx.origin, "UNABLE_FILL");
-        //TODO: filledTakerAmount == 0
-        require(ECDSA.recover(orderHash, signature) == order.maker, "INVALID_SIGNATURE");
-        require(order.expiration > block.timestamp, "EXPIRE_ORDER");
+        require(order.taker == msg.sender, "DLOP:UNABLE_FILL");
+        //TODO: makerRegistry
+        require(ECDSA.recover(orderHash, signature) == order.maker, "DLOP:INVALID_SIGNATURE");
+        require(order.expiration > block.timestamp, "DLOP: EXPIRE_ORDER");
 
-        // Compute maker and taker assets amount
-        // if ((takingAmount == 0) == (makingAmount == 0)) {
-        //     revert("LOP: only one amount should be 0");
-        // }
-        // else if (takingAmount == 0) {
-        //     takingAmount = _callGetTakerAmount(order, makingAmount);
-        //     require(takingAmount <= thresholdAmount, "LOP: taking amount too high");
-        // }
-        // else {
-        //     makingAmount = _callGetMakerAmount(order, takingAmount);
-        //     require(makingAmount >= thresholdAmount, "LOP: making amount too low");
-        // }
-        // require(makingAmount > 0 && takingAmount > 0, "LOP: can't swap 0 amount");
-        // // Update remaining amount in storage
-        // remainingMakerAmount = remainingMakerAmount.sub(makingAmount, "LOP: taking > remaining");
-        // _remaining[orderHash] = remainingMakerAmount + 1;
-        // emit OrderFilled(msg.sender, orderHash, remainingMakerAmount);
 
-        // // Taker => Maker
-        // _callTakerAssetTransferFrom(order.takerAsset, order.takerAssetData, takingAmount);
+        uint256 leftTakerAmount = order.takerAmount.sub(filledTakerAmount);
+        curTakerFillAmount = takerFillAmount < leftTakerAmount ? takerFillAmount:leftTakerAmount;
+        curMakerFillAmount = curTakerFillAmount.mul(order.makerAmount).div(order.takerAmount);
 
-        // // Maker can handle funds interactively
-        // if (order.interaction.length > 0) {
-        //     InteractiveMaker(order.makerAssetData.decodeAddress(_FROM_INDEX))
-        //         .notifyFillOrder(order.makerAsset, order.takerAsset, makingAmount, takingAmount, order.interaction);
-        // }
+        require(curTakerFillAmount > 0 && curMakerFillAmount > 0, "DLOP: ZERO_FILL_INVALID");
+        require(thresholdMakerAmount <= curMakerFillAmount, "DLOP: FILL_MAKER_LOW");
 
-        // // Maker => Taker
-        // _callMakerAssetTransferFrom(order.makerAsset, order.makerAssetData, target, makingAmount);
+        _FILLED_TAKER_AMOUNT_[orderHash] = filledTakerAmount.add(curTakerFillAmount);
 
-        return (0, 0);
+        //Maker => Taker
+        IERC20(order.makerToken).safeTransferFrom(order.maker, msg.sender, curMakerFillAmount);
+
+        if(takerInteraction.length > 0) {
+            (bool success, ) = msg.sender.call(takerInteraction);
+            require(success, "DLOP: TAKER_INTERACTIVE_FAILED");
+        }
+
+        //Taker => Maker
+        IERC20(order.takerToken).safeTransferFrom(msg.sender, order.maker, curTakerFillAmount);
+
+        emit LimitOrderFilled(order.maker, msg.sender, orderHash, curTakerFillAmount, curMakerFillAmount);
     }
-
 
     //============  internal ============
     function _orderHash(LimitOrder memory order) private view returns(bytes32) {
@@ -114,8 +93,10 @@ contract DODOLimitOrder is EIP712("DODO Limit Order Protocol", "1"){
                     order.takerToken,
                     order.makerAmount,
                     order.takerAmount,
+                    order.takerTokenFeeAmount,
                     order.maker,
                     order.taker,
+                    order.feeRecipient,
                     order.expiration,
                     order.salt
                 )
