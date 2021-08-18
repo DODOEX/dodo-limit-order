@@ -38,6 +38,9 @@ module.exports = {
    *
    * $ truffle test --network <network-name>
    */
+  deploySwitch: {
+    DEPLOY_LIMIT_ORDER: true
+  },
 
   networks: {
     // Useful for testing. The `development` name is special - truffle uses it by default

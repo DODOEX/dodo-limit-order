@@ -10,6 +10,7 @@ import {SafeMath} from "./lib/SafeMath.sol";
 import {SafeERC20} from "./lib/SafeERC20.sol";
 import {EIP712} from "./external/draft-EIP712.sol";
 import {ECDSA} from "./external/ECDSA.sol";
+import "./lib/ArgumentsDecoder.sol";
 
 /**
  * @title DODOLimitOrder
@@ -18,6 +19,7 @@ import {ECDSA} from "./external/ECDSA.sol";
 contract DODOLimitOrder is EIP712("DODO Limit Order Protocol", "1"){
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
+    using ArgumentsDecoder for bytes;
 
     struct LimitOrder {
         address makerToken;
@@ -73,6 +75,8 @@ contract DODOLimitOrder is EIP712("DODO Limit Order Protocol", "1"){
         IERC20(order.makerToken).safeTransferFrom(order.maker, msg.sender, curMakerFillAmount);
 
         if(takerInteraction.length > 0) {
+            takerInteraction.patchUint256(0, curTakerFillAmount);
+            takerInteraction.patchUint256(1, curMakerFillAmount);
             (bool success, ) = msg.sender.call(takerInteraction);
             require(success, "DLOP: TAKER_INTERACTIVE_FAILED");
         }
@@ -103,5 +107,4 @@ contract DODOLimitOrder is EIP712("DODO Limit Order Protocol", "1"){
             )
         );
     }
-
 }

@@ -66,24 +66,16 @@ import {SafeERC20} from "./lib/SafeERC20.sol";
 
 
     function doLimitOrderSwap(
+        uint256 curTakerFillAmount,
+        uint256 curMakerFillAmount,
         address makerToken, //fromToken
         address takerToken, //toToken
-        bytes memory orderHash,
-        uint256 orderTakerAmount,
-        uint256 orderMakerAmount,
-        uint256 takerFillAmount,
         address dodoRouteProxy,
         bytes memory dodoApiData
     ) external {
         require(msg.sender == _DODO_LIMIT_ORDER_, "ACCESS_NENIED");
         uint256 originTakerBalance = IERC20(takerToken).balanceOf(address(this));
-        //TODO: 跨合约调用
-        uint256 filledTakerAmount = 0;
-        
-        uint256 leftTakerAmount = orderTakerAmount.sub(filledTakerAmount);
-        uint256 curTakerFillAmount = takerFillAmount < leftTakerAmount ? takerFillAmount:leftTakerAmount;
-        uint256 curMakerFillAmount = curTakerFillAmount.mul(orderMakerAmount).div(orderTakerAmount);        
-
+     
         _approveMax(IERC20(makerToken), _DODO_APPROVE_, curMakerFillAmount);
         
         (bool success, ) = dodoRouteProxy.call(dodoApiData);
@@ -96,8 +88,6 @@ import {SafeERC20} from "./lib/SafeERC20.sol";
         
         _approveMax(IERC20(takerToken), _DODO_LIMIT_ORDER_, curTakerFillAmount);
     }
-
-
 
     function addAdminList (address userAddr) external onlyOwner {
         isAdminListed[userAddr] = true;

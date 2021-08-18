@@ -15,6 +15,7 @@ flattered/
 *.swo
 *.swp
 
+deploy-detail.txt
 
 node_modules
 
