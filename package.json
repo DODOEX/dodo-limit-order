@@ -38,6 +38,7 @@
     "debug": "^4.1.1",
     "dotenv-flow": "^3.1.0",
     "es6-promisify": "^6.1.1",
+    "eth-sig-util": "^3.0.1",
     "ethereumjs-util": "^7.0.7",
     "ethjs": "^0.4.0",
     "lodash": "^4.17.20",
