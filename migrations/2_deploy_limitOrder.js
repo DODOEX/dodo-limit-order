@@ -12,7 +12,8 @@ module.exports = async (deployer, network, accounts) => {
     if (CONFIG == null) return;
 
     let DODOApproveAddress = CONFIG.DODOApprove;
-    if (DODOApproveAddress == null) return;
+    let DODOApproveProxyAddress = CONFIG.DODOApproveProxy;
+    if (DODOApproveAddress == null || DODOApproveProxyAddress == null) return;
 
     let DODOLimitOrderAddress = CONFIG.DODOLimitOrder;
     let DODOLimitOrderBotAddress = CONFIG.DODOLimitOrderBot;
@@ -45,6 +46,16 @@ module.exports = async (deployer, network, accounts) => {
             const DODOLimitOrderBotInstance = await DODOLimitOrderBot.at(DODOLimitOrderBotAddress);
             tx = await DODOLimitOrderBotInstance.init(multiSigAddress, DODOLimitOrderAddress, multiSigAddress, DODOApproveAddress);
             logger.log("DODOLimitOrderBot Init tx: ", tx.tx);
+
+            tx = await DODOLimitOrderBotInstance.addAdminList(multiSigAddress);
+            logger.log("DODOLimitOrderBot AddAdminList tx: ", tx.tx);
+
+            const DODOLimitOrderInstance = await DODOLimitOrder.at(DODOLimitOrderAddress);
+            tx = await DODOLimitOrderInstance.init(multiSigAddress, DODOApproveProxyAddress);
+            logger.log("DODOLimitOrder Init tx: ", tx.tx);
+
+            tx = await DODOLimitOrderInstance.addWhiteList(DODOLimitOrderBotAddress);
+            logger.log("DODOLimitOrder AddWhiteList tx: ", tx.tx);
         }
     }
 };

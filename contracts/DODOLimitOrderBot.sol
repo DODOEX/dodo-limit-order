@@ -11,7 +11,7 @@ import {SafeMath} from "./lib/SafeMath.sol";
 import {SafeERC20} from "./lib/SafeERC20.sol";
 
 /**
- * @title DODOLimitOrder
+ * @title DODOLimitOrderBot
  * @author DODO Breeder
  */
 
@@ -28,6 +28,7 @@ import {SafeERC20} from "./lib/SafeERC20.sol";
     //=============== Event ===============
     event addAdmin(address admin);
     event removeAdmin(address admin);
+    event changeReceiver(address newReceiver);
     event Fill();
 
     function init(
@@ -43,7 +44,7 @@ import {SafeERC20} from "./lib/SafeERC20.sol";
     }
      
      function fillDODOLimitOrder(
-        bytes memory callExternalData, //调用DODOLimitOrder合约的data
+        bytes memory callExternalData, //call DODOLimitOrder
         address takerToken, 
         uint256 minTakerTokenAmount
      ) external {
@@ -89,6 +90,8 @@ import {SafeERC20} from "./lib/SafeERC20.sol";
         _approveMax(IERC20(takerToken), _DODO_LIMIT_ORDER_, curTakerFillAmount);
     }
 
+
+    //============  Ownable ============
     function addAdminList (address userAddr) external onlyOwner {
         isAdminListed[userAddr] = true;
         emit addAdmin(userAddr);
@@ -99,6 +102,13 @@ import {SafeERC20} from "./lib/SafeERC20.sol";
         emit removeAdmin(userAddr);
     }
 
+    function changeTokenReceiver(address newTokenReceiver) external onlyOwner {
+        _TOKEN_RECEIVER_ = newTokenReceiver;
+        emit changeReceiver(newTokenReceiver);
+    }
+
+
+    //============  internal ============
     function _approveMax(IERC20 token,address to,uint256 amount) internal {
         uint256 allowance = token.allowance(address(this), to);
         if (allowance < amount) {

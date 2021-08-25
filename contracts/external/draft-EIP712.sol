@@ -1,7 +1,7 @@
 // This is a file copied from https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.2.0/contracts/utils/cryptography/draft-EIP712.sol
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.0;
+pragma solidity 0.8.4;
 
 import "./ECDSA.sol";
 

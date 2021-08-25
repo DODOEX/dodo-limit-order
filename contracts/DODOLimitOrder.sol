@@ -10,13 +10,15 @@ import {SafeMath} from "./lib/SafeMath.sol";
 import {SafeERC20} from "./lib/SafeERC20.sol";
 import {EIP712} from "./external/draft-EIP712.sol";
 import {ECDSA} from "./external/ECDSA.sol";
+import {IDODOApproveProxy} from "./intf/IDODOApproveProxy.sol";
+import {InitializableOwnable} from "./lib/InitializableOwnable.sol";
 import "./lib/ArgumentsDecoder.sol";
 
 /**
  * @title DODOLimitOrder
  * @author DODO Breeder
  */
-contract DODOLimitOrder is EIP712("DODO Limit Order Protocol", "1"){
+contract DODOLimitOrder is EIP712("DODO Limit Order Protocol", "1"), InitializableOwnable{
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
     using ArgumentsDecoder for bytes;
@@ -36,10 +38,17 @@ contract DODOLimitOrder is EIP712("DODO Limit Order Protocol", "1"){
 
     // ============ Storage ============
     mapping(bytes32 => uint256) public _FILLED_TAKER_AMOUNT_;
+    mapping (address => bool) public isWhiteListed;
+    address public _DODO_APPROVE_PROXY_;
 
     bytes32 constant public LIMIT_ORDER_TYPEHASH = keccak256(
         "LimitOrder(address makerToken,address takerToken,uint256 makerAmount,uint256 takerAmount,uint256 takerTokenFeeAmount,address maker,address taker,address feeRecipient,uint256 expiration,uint256 salt)"
     );
+
+    function init(address owner, address dodoApproveProxy) external {
+        initOwner(owner);
+        _DODO_APPROVE_PROXY_ = dodoApproveProxy;
+    }
     
     // ============ Events =============
     event LimitOrderFilled(address indexed maker, address indexed taker, bytes32 orderHash, uint256 curTakerFillAmount, uint256 curMakerFillAmount);
@@ -55,9 +64,11 @@ contract DODOLimitOrder is EIP712("DODO Limit Order Protocol", "1"){
         uint256 filledTakerAmount = _FILLED_TAKER_AMOUNT_[orderHash];
 
         require(filledTakerAmount < order.takerAmount, "DLOP: ALREADY_FILLED");
-        //TODO: takerRegistry
-        require(order.taker == msg.sender, "DLOP:UNABLE_FILL");
-        //TODO: makerRegistry
+
+        if (order.taker != address(0)) {
+            require(order.taker == msg.sender, "DLOP:PRIVATE_ORDER");
+        }
+
         require(ECDSA.recover(orderHash, signature) == order.maker, "DLOP:INVALID_SIGNATURE");
         require(order.expiration > block.timestamp, "DLOP: EXPIRE_ORDER");
 
@@ -67,16 +78,19 @@ contract DODOLimitOrder is EIP712("DODO Limit Order Protocol", "1"){
         curMakerFillAmount = curTakerFillAmount.mul(order.makerAmount).div(order.takerAmount);
 
         require(curTakerFillAmount > 0 && curMakerFillAmount > 0, "DLOP: ZERO_FILL_INVALID");
-        require(thresholdMakerAmount <= curMakerFillAmount, "DLOP: FILL_MAKER_LOW");
+        require(thresholdMakerAmount <= curMakerFillAmount, "DLOP: FILL_MAKER_TOO_LOW");
 
         _FILLED_TAKER_AMOUNT_[orderHash] = filledTakerAmount.add(curTakerFillAmount);
 
         //Maker => Taker
-        IERC20(order.makerToken).safeTransferFrom(order.maker, msg.sender, curMakerFillAmount);
+        // IERC20(order.makerToken).safeTransferFrom(order.maker, msg.sender, curMakerFillAmount);
+        IDODOApproveProxy(_DODO_APPROVE_PROXY_).claimTokens(order.makerToken, order.maker, msg.sender, curMakerFillAmount);
+
 
         if(takerInteraction.length > 0) {
             takerInteraction.patchUint256(0, curTakerFillAmount);
             takerInteraction.patchUint256(1, curMakerFillAmount);
+            require(isWhiteListed[msg.sender], "DLOP: Not Whitelist Contract");
             (bool success, ) = msg.sender.call(takerInteraction);
             require(success, "DLOP: TAKER_INTERACTIVE_FAILED");
         }
@@ -86,6 +100,17 @@ contract DODOLimitOrder is EIP712("DODO Limit Order Protocol", "1"){
 
         emit LimitOrderFilled(order.maker, msg.sender, orderHash, curTakerFillAmount, curMakerFillAmount);
     }
+
+
+    //============  Ownable ============
+    function addWhiteList (address contractAddr) public onlyOwner {
+        isWhiteListed[contractAddr] = true;
+    }
+
+    function removeWhiteList (address contractAddr) public onlyOwner {
+        isWhiteListed[contractAddr] = false;
+    }
+
 
     //============  internal ============
     function _orderHash(LimitOrder memory order) private view returns(bytes32) {

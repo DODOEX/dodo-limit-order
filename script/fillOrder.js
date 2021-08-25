@@ -7,8 +7,8 @@ var dodoLimitOrderBotAbi = require('../build/contracts/DODOLimitOrderBot.json').
 
 //rinkeby
 var web3 = new Web3(new Web3.providers.HttpProvider("https://rinkeby.infura.io/v3/" + infuraId));
-var dodoLimitOrderAddress = "0x108DC7Ce5011a2a6D56E215434C19Cc74cE069Cf";
-var dodoLimitOrderBotAddress = "0x60c45cBA5f2dD81A4Aa590b29FD2D6123d095345";
+var dodoLimitOrderAddress = "0x969782CEdA52E3a8991C8f91Add31406A781580F";
+var dodoLimitOrderBotAddress = "0xD17bfB2C31021ED1D3ae2C34D04F3f3A69e5dc82";
 var dodoLimitOrderInstance = new web3.eth.Contract(dodoLimitOrderAbi, dodoLimitOrderAddress);
 var dodoLimitOrderBotInstance = new web3.eth.Contract(dodoLimitOrderBotAbi, dodoLimitOrderBotAddress);
 var makerToken = "0x0f423838d2e4ce4314d30f8ad42dc41cecde06c5"; //LOABC
@@ -21,8 +21,8 @@ var feeReceiver = "0x0000000000000000000000000000000000000000";
 var dodoProxy = "0xba001E96AF87bF9d8D0BDA667067A9921FE6d294";
 var dodoApiData = "";
 var signature = "";
-var expiration = 1630594593;
-var salt = "1346135643555";
+var expiration = 1630726274;
+var salt = "";
 
 makeData()
 
@@ -54,7 +54,7 @@ async function makeData() {
     var fillLimitOrderData = dodoLimitOrderInstance.methods.fillLimitOrder(
         limitOrder,
         signature,
-        parseFixed('0.3', 18).toString(),//all filled
+        parseFixed('0.7', 18).toString(),//all filled
         "0",
         dodoLimitOrderSwapData
     ).encodeABI();

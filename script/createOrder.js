@@ -2,8 +2,8 @@ var eth_sig_util_1 = require("eth-sig-util");
 const { parseFixed } = require('@ethersproject/bignumber')
 var privKey = process.env.privKey;
 
-var dodoLimitOrder = "0x108DC7Ce5011a2a6D56E215434C19Cc74cE069Cf"
-var dodoLimitOrderBot = "0x60c45cBA5f2dD81A4Aa590b29FD2D6123d095345"
+var dodoLimitOrder = "0x969782CEdA52E3a8991C8f91Add31406A781580F"
+var dodoLimitOrderBot = "0xD17bfB2C31021ED1D3ae2C34D04F3f3A69e5dc82"
 
 var Rinkeby_LOABC = "0x0f423838d2e4ce4314d30f8ad42dc41cecde06c5"
 var Rinkeby_LODEF = "0xce7afae63edd2719cd9f46f8afa80eb490ede6a8"
@@ -59,14 +59,6 @@ async function signTypedData(typedData) {
     });
     return result
 }
-
-//For MetaMask
-// async function signTypedData(account, typedData) {
-//     return this.web3.currentProvider.send('eth_signTypedData_v4', [
-//         account,
-//         JSON.stringify(typedData),
-//     ]);
-// }
 
 function buildLimitOrderTypedData(limitOrder) {
     return {
