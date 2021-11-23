@@ -23,27 +23,26 @@ contract DODOLimitOrder is EIP712("DODO Limit Order Protocol", "1"), Initializab
     using SafeERC20 for IERC20;
     using ArgumentsDecoder for bytes;
 
-    struct LimitOrder {
+    struct Order {
         address makerToken;
         address takerToken;
         uint256 makerAmount;
         uint256 takerAmount;
-        uint256 takerTokenFeeAmount;
         address maker;
         address taker;
-        address feeRecipient;
         uint256 expiration;
-        uint256 salt;
+        uint256 saltOrSlot;// salt for LimitOrder; slot for RFQ
     }
 
+    bytes32 constant public ORDER_TYPEHASH = keccak256(
+        "Order(address makerToken,address takerToken,uint256 makerAmount,uint256 takerAmount,address maker,address taker,uint256 expiration,uint256 saltOrSlot)"
+    );
+
     // ============ Storage ============
-    mapping(bytes32 => uint256) public _FILLED_TAKER_AMOUNT_;
+    mapping(bytes32 => uint256) public _FILLED_TAKER_AMOUNT_; //limitOrder
+    mapping(address => mapping(uint256 => uint256)) public _RFQ_FILLED_TAKER_AMOUNT_; //RFQ
     mapping (address => bool) public isWhiteListed;
     address public _DODO_APPROVE_PROXY_;
-
-    bytes32 constant public LIMIT_ORDER_TYPEHASH = keccak256(
-        "LimitOrder(address makerToken,address takerToken,uint256 makerAmount,uint256 takerAmount,uint256 takerTokenFeeAmount,address maker,address taker,address feeRecipient,uint256 expiration,uint256 salt)"
-    );
 
     function init(address owner, address dodoApproveProxy) external {
         initOwner(owner);
@@ -52,9 +51,10 @@ contract DODOLimitOrder is EIP712("DODO Limit Order Protocol", "1"), Initializab
     
     // ============ Events =============
     event LimitOrderFilled(address indexed maker, address indexed taker, bytes32 orderHash, uint256 curTakerFillAmount, uint256 curMakerFillAmount);
+    event RFQOrderFilled(address indexed maker, address indexed taker, bytes32 orderHash, uint256 curTakerFillAmount, uint256 curMakerFillAmount);
 
     function fillLimitOrder(
-        LimitOrder memory order,
+        Order memory order,
         bytes memory signature,
         uint256 takerFillAmount,
         uint256 thresholdMakerAmount,
@@ -78,14 +78,12 @@ contract DODOLimitOrder is EIP712("DODO Limit Order Protocol", "1"), Initializab
         curMakerFillAmount = curTakerFillAmount.mul(order.makerAmount).div(order.takerAmount);
 
         require(curTakerFillAmount > 0 && curMakerFillAmount > 0, "DLOP: ZERO_FILL_INVALID");
-        require(thresholdMakerAmount <= curMakerFillAmount, "DLOP: FILL_MAKER_TOO_LOW");
+        require(curMakerFillAmount >= thresholdMakerAmount, "DLOP: FILL_MAKER_TOO_LOW");
 
         _FILLED_TAKER_AMOUNT_[orderHash] = filledTakerAmount.add(curTakerFillAmount);
 
         //Maker => Taker
-        // IERC20(order.makerToken).safeTransferFrom(order.maker, msg.sender, curMakerFillAmount);
         IDODOApproveProxy(_DODO_APPROVE_PROXY_).claimTokens(order.makerToken, order.maker, msg.sender, curMakerFillAmount);
-
 
         if(takerInteraction.length > 0) {
             takerInteraction.patchUint256(0, curTakerFillAmount);
@@ -101,6 +99,47 @@ contract DODOLimitOrder is EIP712("DODO Limit Order Protocol", "1"), Initializab
         emit LimitOrderFilled(order.maker, msg.sender, orderHash, curTakerFillAmount, curMakerFillAmount);
     }
 
+    function fillRFQ(
+        Order memory order,
+        bytes memory signature,
+        uint256 takerFillAmount,
+        uint256 thresholdMakerAmount,
+        address taker
+    ) public returns(uint256 curTakerFillAmount, uint256 curMakerFillAmount) {
+        bytes32 orderHash = _orderHash(order);
+        uint256 filledTakerAmount = _RFQ_FILLED_TAKER_AMOUNT_[order.maker][order.saltOrSlot];
+
+        require(filledTakerAmount < order.takerAmount, "DLOP: ALREADY_FILLED");
+
+        if (order.taker != address(0)) {
+            require(order.taker == taker, "DLOP:TAKER_INVALID");
+        }
+
+        require(ECDSA.recover(orderHash, signature) == order.maker, "DLOP:INVALID_SIGNATURE");
+        require(order.expiration > block.timestamp, "DLOP: EXPIRE_ORDER");
+
+
+        uint256 leftTakerAmount = order.takerAmount.sub(filledTakerAmount);
+        if(takerFillAmount > leftTakerAmount) {
+            return (0,0);
+        }
+        
+        curTakerFillAmount = takerFillAmount;
+        curMakerFillAmount = curTakerFillAmount.mul(order.makerAmount).div(order.takerAmount);
+
+        require(curTakerFillAmount > 0 && curMakerFillAmount > 0, "DLOP: ZERO_FILL_INVALID");
+        require(curMakerFillAmount >= thresholdMakerAmount, "DLOP: FILL_MAKER_TOO_LOW");
+
+        _RFQ_FILLED_TAKER_AMOUNT_[order.maker][order.saltOrSlot] = filledTakerAmount.add(curTakerFillAmount);
+
+        //Maker => Taker
+        IDODOApproveProxy(_DODO_APPROVE_PROXY_).claimTokens(order.makerToken, order.maker, taker, curMakerFillAmount);
+        //Taker => Maker
+        IDODOApproveProxy(_DODO_APPROVE_PROXY_).claimTokens(order.takerToken, taker, order.maker, curTakerFillAmount);
+        
+        emit RFQOrderFilled(order.maker, taker, orderHash, curTakerFillAmount, curMakerFillAmount);
+    }
+
 
     //============  Ownable ============
     function addWhiteList (address contractAddr) public onlyOwner {
@@ -113,21 +152,19 @@ contract DODOLimitOrder is EIP712("DODO Limit Order Protocol", "1"), Initializab
 
 
     //============  internal ============
-    function _orderHash(LimitOrder memory order) private view returns(bytes32) {
+    function _orderHash(Order memory order) private view returns(bytes32) {
         return _hashTypedDataV4(
             keccak256(
                 abi.encode(
-                    LIMIT_ORDER_TYPEHASH,
+                    ORDER_TYPEHASH,
                     order.makerToken,
                     order.takerToken,
                     order.makerAmount,
                     order.takerAmount,
-                    order.takerTokenFeeAmount,
                     order.maker,
                     order.taker,
-                    order.feeRecipient,
                     order.expiration,
-                    order.salt
+                    order.saltOrSlot
                 )
             )
         );

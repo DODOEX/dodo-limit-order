@@ -139,7 +139,9 @@ module.exports = {
   mocha: {
     timeout: false,
   },
-  plugins: ["solidity-coverage"],
+  plugins: [
+    "solidity-coverage"
+  ],
   // Configure your compilers
   compilers: {
     solc: {

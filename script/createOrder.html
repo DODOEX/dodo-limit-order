@@ -8,14 +8,15 @@
 
 <body>
     <div>
-        <button onclick="createOrder()">Sign</button>
+        <button onclick="createOrder()">SignLimitOrder</button>
+        <button onclick="createRFQOrder()">SignRFQOrder</button>
         <span id="result"></span>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/web3@1.4.0/dist/web3.min.js"></script>
     <script type="text/javascript">
 
-    var dodoLimitOrder = "0x969782CEdA52E3a8991C8f91Add31406A781580F"
-    var dodoLimitOrderBot = "0xD17bfB2C31021ED1D3ae2C34D04F3f3A69e5dc82"
+    var dodoLimitOrder = "0x2093bC118E6B4aBFB0B3f61E2d01e9100c93B713"
+    var dodoLimitOrderBot = "0xFff90AA817D06801d8B8A9B8B0E295C7708AeD30"
 
     var Rinkeby_LOABC = "0x0f423838d2e4ce4314d30f8ad42dc41cecde06c5"
     var Rinkeby_LODEF = "0xce7afae63edd2719cd9f46f8afa80eb490ede6a8"
@@ -25,12 +26,21 @@
         takerToken: Rinkeby_LODEF,
         makerAmount: '10000000000000000000',
         takerAmount: '1000000000000000000',
-        takerTokenFeeAmount: '0',
         maker: '0xbC7814de9e42945C9fFd89D2BFff1a45e07Bdb10',
         taker: dodoLimitOrderBot,
-        feeRecipient: '0x0000000000000000000000000000000000000000',
         expiration: Math.floor(new Date().getTime() / 1000 + 60 * 60 * 24 * 10),
-        salt: Math.round(Math.random() * Date.now()) + ''
+        saltOrSlot: Math.round(Math.random() * Date.now()) + ''
+    }
+
+    var rfqOrder = {
+        makerToken: Rinkeby_LODEF,
+        takerToken: Rinkeby_LOABC,
+        makerAmount: '1000000000000000000',
+        takerAmount: '10000000000000000000',
+        maker: '0x7e83d9d94837eE82F0cc18a691da6f42F03F1d86',
+        taker: '0x0000000000000000000000000000000000000000',
+        expiration: Math.floor(new Date().getTime() / 1000 + 60 * 60 * 24 * 10),
+        saltOrSlot: Math.round(Math.random() * Date.now()) + ''
     }
 
     var EIP712_DOMAIN = [
@@ -40,17 +50,15 @@
         { name: 'verifyingContract', type: 'address' },
     ];
 
-    var LIMIT_ORDER_STRUCTRUE = [
+    var ORDER_STRUCTRUE = [
         { name: 'makerToken', type: 'address' },
         { name: 'takerToken', type: 'address' },
         { name: 'makerAmount', type: 'uint256' },
         { name: 'takerAmount', type: 'uint256' },
-        { name: 'takerTokenFeeAmount', type: 'uint256' },
         { name: 'maker', type: 'address' },
         { name: 'taker', type: 'address' },
-        { name: 'feeRecipient', type: 'address' },
         { name: 'expiration', type: 'uint256' },
-        { name: 'salt', type: 'uint256' }
+        { name: 'saltOrSlot', type: 'uint256' }
     ];
 
 
@@ -60,10 +68,18 @@
         document.getElementById('result').innerText = signature.result;
         console.log("signature:", signature)
         console.log("expiration:", limitOrder.expiration)
-        console.log("salt:", limitOrder.salt)
+        console.log("saltOrSlot:", limitOrder.saltOrSlot)
     }
 
-    //For MetaMask
+    async function createRFQOrder() {
+        var rfqOrderTypedData = buildRfqOrderTypedData(rfqOrder);
+        var signature = await signTypedData(rfqOrder.maker, rfqOrderTypedData);
+        document.getElementById('result').innerText = signature.result;
+        console.log("signature:", signature)
+        console.log("expiration:", rfqOrder.expiration)
+        console.log("saltOrSlot:", rfqOrder.saltOrSlot)
+    }
+
     async function signTypedData(account, typedData) {
         web3 = new Web3(web3.currentProvider);
         return web3.currentProvider.send('eth_signTypedData_v4', [
@@ -72,12 +88,12 @@
         ]);
     }
 
-    function buildLimitOrderTypedData(limitOrder) {
+    function buildLimitOrderTypedData(order) {
         return {
-            primaryType: 'LimitOrder',
+            primaryType: 'Order',
             types: {
                 EIP712Domain: EIP712_DOMAIN,
-                LimitOrder: LIMIT_ORDER_STRUCTRUE,
+                Order: ORDER_STRUCTRUE,
             },
             domain: {
                 name: 'DODO Limit Order Protocol',
@@ -89,6 +105,23 @@
         };
     }
 
+
+    function buildRfqOrderTypedData(order) {
+        return {
+            primaryType: 'Order',
+            types: {
+                EIP712Domain: EIP712_DOMAIN,
+                Order: ORDER_STRUCTRUE,
+            },
+            domain: {
+                name: 'DODO Limit Order Protocol',
+                version: '1',
+                chainId: 4,
+                verifyingContract: dodoLimitOrder,
+            },
+            message: rfqOrder,
+        };
+    }
 
     </script>
 </body>
