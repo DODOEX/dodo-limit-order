@@ -51,7 +51,7 @@ module.exports = async (deployer, network, accounts) => {
             logger.log("DODOLimitOrderBot AddAdminList tx: ", tx.tx);
 
             const DODOLimitOrderInstance = await DODOLimitOrder.at(DODOLimitOrderAddress);
-            tx = await DODOLimitOrderInstance.init(multiSigAddress, DODOApproveProxyAddress);
+            tx = await DODOLimitOrderInstance.init(multiSigAddress, DODOApproveProxyAddress, multiSigAddress);
             logger.log("DODOLimitOrder Init tx: ", tx.tx);
 
             tx = await DODOLimitOrderInstance.addWhiteList(DODOLimitOrderBotAddress);

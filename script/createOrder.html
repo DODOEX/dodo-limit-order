@@ -3,20 +3,25 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>createOrder</title>
+    <title>limitOrder&&RFQ TEST</title>
 </head>
 
 <body>
     <div>
         <button onclick="createOrder()">SignLimitOrder</button>
-        <button onclick="createRFQOrder()">SignRFQOrder</button>
+        <button onclick="createRFQOrder()">SignRFQOrderByMM</button>
+
+        <br/>
+        <input type="text" id="expiration" name="expiration"/>
+        <input type="text" id="saltOrSlot" name="saltOrSlot"/>
+        <button onclick="createRFQOrderByUser()">SignRFQOrderByUser</button>
         <span id="result"></span>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/web3@1.4.0/dist/web3.min.js"></script>
     <script type="text/javascript">
 
-    var dodoLimitOrder = "0x2093bC118E6B4aBFB0B3f61E2d01e9100c93B713"
-    var dodoLimitOrderBot = "0xFff90AA817D06801d8B8A9B8B0E295C7708AeD30"
+    var dodoLimitOrder = "0x3d6cD627e7F13CaDd1B577ceFe2Bb0555aBbc1a9"
+    var dodoLimitOrderBot = "0xBAac6209dc3E92988F87EB6111f0914ADC1eAe9e"
 
     var Rinkeby_LOABC = "0x0f423838d2e4ce4314d30f8ad42dc41cecde06c5"
     var Rinkeby_LODEF = "0xce7afae63edd2719cd9f46f8afa80eb490ede6a8"
@@ -26,6 +31,7 @@
         takerToken: Rinkeby_LODEF,
         makerAmount: '10000000000000000000',
         takerAmount: '1000000000000000000',
+        makerTokenFeeAmount: '0',
         maker: '0xbC7814de9e42945C9fFd89D2BFff1a45e07Bdb10',
         taker: dodoLimitOrderBot,
         expiration: Math.floor(new Date().getTime() / 1000 + 60 * 60 * 24 * 10),
@@ -37,6 +43,7 @@
         takerToken: Rinkeby_LOABC,
         makerAmount: '1000000000000000000',
         takerAmount: '10000000000000000000',
+        makerTokenFeeAmount: '0',
         maker: '0x7e83d9d94837eE82F0cc18a691da6f42F03F1d86',
         taker: '0x0000000000000000000000000000000000000000',
         expiration: Math.floor(new Date().getTime() / 1000 + 60 * 60 * 24 * 10),
@@ -55,6 +62,7 @@
         { name: 'takerToken', type: 'address' },
         { name: 'makerAmount', type: 'uint256' },
         { name: 'takerAmount', type: 'uint256' },
+        { name: 'makerTokenFeeAmount', type: 'uint256' },
         { name: 'maker', type: 'address' },
         { name: 'taker', type: 'address' },
         { name: 'expiration', type: 'uint256' },
@@ -69,6 +77,16 @@
         console.log("signature:", signature)
         console.log("expiration:", limitOrder.expiration)
         console.log("saltOrSlot:", limitOrder.saltOrSlot)
+    }
+
+    async function createRFQOrderByUser() {
+        rfqOrder.expiration = document.getElementById("expiration").value;
+        rfqOrder.saltOrSlot = document.getElementById("saltOrSlot").value;
+        rfqOrder.taker = "0xbC7814de9e42945C9fFd89D2BFff1a45e07Bdb10"
+        rfqOrder.makerTokenFeeAmount = "10000000000000000"
+        var rfqOrderTypedData = buildRfqOrderTypedData(rfqOrder);
+        var signature = await signTypedData(rfqOrder.taker, rfqOrderTypedData);
+        console.log("signature By User:", signature)
     }
 
     async function createRFQOrder() {
