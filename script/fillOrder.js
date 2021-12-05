@@ -13,8 +13,8 @@ var dodoLimitOrderInstance = new web3.eth.Contract(dodoLimitOrderAbi, dodoLimitO
 var dodoLimitOrderBotInstance = new web3.eth.Contract(dodoLimitOrderBotAbi, dodoLimitOrderBotAddress);
 
 // makeLimitOrderData()
-makeRFQByUserData();
-// makeRFQByPlatformData();
+// makeRFQByUserData();
+makeRFQByPlatformData();
 
 async function makeLimitOrderData() {
     var makerToken = "0x0f423838d2e4ce4314d30f8ad42dc41cecde06c5"; //LOABC
@@ -24,10 +24,10 @@ async function makeLimitOrderData() {
     var maker = "0xbC7814de9e42945C9fFd89D2BFff1a45e07Bdb10";
     var taker = dodoLimitOrderBotAddress;
     var dodoProxy = "0xba001E96AF87bF9d8D0BDA667067A9921FE6d294";
-    var dodoApiData = "0xf87dc1b70000000000000000000000000f423838d2e4ce4314d30f8ad42dc41cecde06c5000000000000000000000000ce7afae63edd2719cd9f46f8afa80eb490ede6a80000000000000000000000000000000000000000000000008ac7230489e800000000000000000000000000000000000000000000000000000d36b9023c7130aa00000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000619f4d530000000000000000000000000000000000000000000000000000000000000001000000000000000000000000ba76f249c40101427ec9d9823c251172f3e53548";
-    var signature = "0x8e668bd71dfdba198d5958add64630d4b02fc4a02cc878111b176f2ec979b1f60c20cce7bc34a064334b6f77a8a507a18118a6d5b70b640db5b05589467911661b";
-    var expiration = 1638692023;
-    var saltOrSolt = 984669687182;
+    var dodoApiData = "";
+    var signature = "";
+    var expiration = 1638773261;
+    var saltOrSolt = 244801022974;
 
     //step one: 构造doLimitOrderSwap
     var dodoLimitOrderSwapData = dodoLimitOrderBotInstance.methods.doLimitOrderSwap(
@@ -80,7 +80,7 @@ async function makeRFQByUserData() {
     var takerAmount = "10";
     var maker = "0x7e83d9d94837eE82F0cc18a691da6f42F03F1d86";
     var taker = "0x0000000000000000000000000000000000000000";
-    var signature = "0x5604ad96b6f635b77fff522b851422ce76f26258639cd8c16d0f5c6697a2bfd16a9cabd94fc698fd00abcff1435cb3420d1517aef6875d62fce0bf8706fc1bf11b";
+    var signature = "";
     var expiration = 1638692362;
     var saltOrSolt = 920209842331;
 
@@ -117,10 +117,10 @@ async function makeRFQByPlatformData() {
     var makerTokenFeeAmount = "0"
     var maker = "0x7e83d9d94837eE82F0cc18a691da6f42F03F1d86";
     var taker = "0x0000000000000000000000000000000000000000";
-    var signatureByMM = "0x89b2130093f2ad4d805a002b7a72ba83b164bd476b4f095d4a0370908ad562d019cedd2bfb4a260591764dbf96f1f0304cb911c5e62c9c18f3952cb13639ef0e1b";
-    var signatureByUser = "0xa0aed55c97c2393af7f9712f784760a9fadb942ae9073a026aa1a890753b890000e71b47297f5d517724903ec8aba5e244525b508260b378981af4f6fe195e6e1c";
-    var expiration = 1638691567;
-    var saltOrSolt = 58136626056;
+    var signatureByMM = "";
+    var signatureByUser = "";
+    var expiration = 1638774174;
+    var saltOrSolt = 1597523953413;
 
     var rfqOrder = [
         makerToken,
