@@ -126,7 +126,7 @@ contract DODOLimitOrder is EIP712("DODO Limit Order Protocol", "1"), Initializab
         bytes32 orderHash = _orderHash(order);
         require(ECDSA.recover(orderHash, signature) == order.maker, "DLOP:INVALID_SIGNATURE");
 
-        _settleRFQ(order,filledTakerAmount,takerFillAmount,thresholdMakerAmount,taker);
+        (curTakerFillAmount, curMakerFillAmount) = _settleRFQ(order,filledTakerAmount,takerFillAmount,thresholdMakerAmount,taker);
         
         emit RFQByUserFilled(order.maker, taker, orderHash, curTakerFillAmount, curMakerFillAmount);
     }
