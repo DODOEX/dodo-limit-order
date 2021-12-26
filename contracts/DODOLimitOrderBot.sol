@@ -59,7 +59,7 @@ import {SafeERC20} from "./lib/SafeERC20.sol";
 
         require(leftTakerAmount >= minTakerTokenAmount, "TAKER_AMOUNT_NOT_ENOUGH");
         
-        IERC20(takerToken).transfer(_TOKEN_RECEIVER_, leftTakerAmount);
+        IERC20(takerToken).safeTransfer(_TOKEN_RECEIVER_, leftTakerAmount);
         
         //TODO:
         emit Fill();

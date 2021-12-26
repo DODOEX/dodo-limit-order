@@ -51,7 +51,9 @@ contract DODOLimitOrder is EIP712("DODO Limit Order Protocol", "1"), Initializab
     event LimitOrderFilled(address indexed maker, address indexed taker, bytes32 orderHash, uint256 curTakerFillAmount, uint256 curMakerFillAmount);
     event RFQByUserFilled(address indexed maker, address indexed taker, bytes32 orderHash, uint256 curTakerFillAmount, uint256 curMakerFillAmount);
     event RFQByPlatformFilled(address indexed maker, address indexed taker, bytes32 orderHash, uint256 curTakerFillAmount, uint256 curMakerFillAmount);
-
+    event AddWhileList(address addr);
+    event RemoveWhiteList(address addr);
+    event ChangeFeeReceiver(address newFeeReceiver);
     
     function init(address owner, address dodoApproveProxy, address feeReciver) external {
         initOwner(owner);
@@ -116,12 +118,9 @@ contract DODOLimitOrder is EIP712("DODO Limit Order Protocol", "1"), Initializab
         address taker
     ) public returns(uint256 curTakerFillAmount, uint256 curMakerFillAmount) {
         uint256 filledTakerAmount = _RFQ_FILLED_TAKER_AMOUNT_[order.maker][order.saltOrSlot];
-
         require(filledTakerAmount < order.takerAmount, "DLOP: ALREADY_FILLED");
 
-        if (order.taker != address(0)) {
-            require(order.taker == taker, "DLOP:TAKER_INVALID");
-        }
+        require(order.taker == address(0), "DLOP:TAKER_INVALID");
         
         bytes32 orderHash = _orderHash(order);
         require(ECDSA.recover(orderHash, signature) == order.maker, "DLOP:INVALID_SIGNATURE");
@@ -145,6 +144,7 @@ contract DODOLimitOrder is EIP712("DODO Limit Order Protocol", "1"), Initializab
 
         bytes32 orderHashForMaker = _orderHash(order);
         require(ECDSA.recover(orderHashForMaker, makerSignature) == order.maker, "DLOP:INVALID_MAKER_SIGNATURE");
+        require(order.taker == address(0), "DLOP:TAKER_INVALID");
 
         order.taker = taker;
         order.makerTokenFeeAmount = makerTokenFeeAmount;
@@ -159,14 +159,17 @@ contract DODOLimitOrder is EIP712("DODO Limit Order Protocol", "1"), Initializab
     //============  Ownable ============
     function addWhiteList (address contractAddr) public onlyOwner {
         isWhiteListed[contractAddr] = true;
+        emit AddWhileList(contractAddr);
     }
 
     function removeWhiteList (address contractAddr) public onlyOwner {
         isWhiteListed[contractAddr] = false;
+        emit RemoveWhiteList(contractAddr);
     }
 
     function changeFeeReceiver (address newFeeReceiver) public onlyOwner {
         _FEE_RECEIVER_ = newFeeReceiver;
+        emit ChangeFeeReceiver(newFeeReceiver);
     }
 
     //============  internal ============
