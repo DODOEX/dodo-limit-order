@@ -114,8 +114,7 @@ contract DODOLimitOrder is EIP712("DODO Limit Order Protocol", "1"), Initializab
         Order memory order,
         bytes memory signature,
         uint256 takerFillAmount,
-        uint256 thresholdMakerAmount,
-        address taker
+        uint256 thresholdMakerAmount
     ) public returns(uint256 curTakerFillAmount, uint256 curMakerFillAmount) {
         uint256 filledTakerAmount = _RFQ_FILLED_TAKER_AMOUNT_[order.maker][order.saltOrSlot];
         require(filledTakerAmount < order.takerAmount, "DLOP: ALREADY_FILLED");
@@ -125,9 +124,9 @@ contract DODOLimitOrder is EIP712("DODO Limit Order Protocol", "1"), Initializab
         bytes32 orderHash = _orderHash(order);
         require(ECDSA.recover(orderHash, signature) == order.maker, "DLOP:INVALID_SIGNATURE");
 
-        (curTakerFillAmount, curMakerFillAmount) = _settleRFQ(order,filledTakerAmount,takerFillAmount,thresholdMakerAmount,taker);
+        (curTakerFillAmount, curMakerFillAmount) = _settleRFQ(order,filledTakerAmount,takerFillAmount,thresholdMakerAmount,msg.sender);
         
-        emit RFQByUserFilled(order.maker, taker, orderHash, curTakerFillAmount, curMakerFillAmount);
+        emit RFQByUserFilled(order.maker, msg.sender, orderHash, curTakerFillAmount, curMakerFillAmount);
     }
 
     function matchingRFQByPlatform(
