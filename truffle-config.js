@@ -18,8 +18,7 @@
  *
  */
 
-var HDWalletProvider = require("truffle-hdwallet-provider");
-var wrapProvider = require('arb-ethers-web3-bridge').wrapProvider;
+var HDWalletProvider = require("@truffle/hdwallet-provider");
 var privKey = process.env.privKey;
 var infuraId = process.env.infuraId;
 //
@@ -57,22 +56,10 @@ module.exports = {
       gasPrice: 1,
     },
 
-    kovan: {
-      networkCheckTimeout: 100000,
-      provider: function () {
-        return new HDWalletProvider(privKey, "https://kovan.infura.io/v3/" + infuraId);
-      },
-      gas: 12000000,
-      gasPrice: 10000000000,
-      network_id: 42,
-      skipDryRun: true
-    },
-
     rinkeby: {
       networkCheckTimeout: 100000,
       provider: function () {
         return new HDWalletProvider(privKey, "https://rinkeby.infura.io/v3/" + infuraId);
-        // return new HDWalletProvider(privKey, "https://eth-rinkeby.dodoex.io");
       },
       gas: 10000000,
       gasPrice: 1500000000,
@@ -83,10 +70,15 @@ module.exports = {
     live: {
       networkCheckTimeout: 100000,
       provider: function () {
-        return new HDWalletProvider(privKey, "https://mainnet.infura.io/v3/" + infuraId);
+        return new HDWalletProvider({
+          privateKeys: [privKey],
+          providerOrUrl: "https://mainnet.infura.io/v3/" + infuraId,
+          chainId: 1
+        });
+        // return new HDWalletProvider(privKey, "https://mainnet.infura.io/v3/" + infuraId);
       },
-      gas: 6000000,
-      gasPrice: 18000000000,
+      gas: 500000,
+      gasPrice: 75000000000,
       network_id: 1,
       skipDryRun: true
     },
@@ -105,32 +97,129 @@ module.exports = {
 
     heco: {
       provider: function () {
-        return new HDWalletProvider(privKey, "https://http-mainnet.hecochain.com");
+        return new HDWalletProvider({
+          privateKeys: [privKey],
+          providerOrUrl: 'https://http-mainnet.hecochain.com',
+          chainId: 128
+        });
       },
+      gas: 2000000,
       gasPrice: 3000000000,
       network_id: 128
     },
 
-    arb: {
+    okchain: {
       provider: function () {
-        return wrapProvider(
-          new HDWalletProvider(privKey, "https://arb1.arbitrum.io/rpc")
-        )
+        return new HDWalletProvider({
+          privateKeys: [privKey],
+          providerOrUrl: 'https://exchainrpc.okex.org',
+          chainId: 66
+        });
       },
-      network_id: '42161',
-      gasPrice: 100000000,
+      gas: 2000000,
+      gasPrice: 3000000000,
+      network_id: 66
     },
 
-    matic: {
+    moonriver: {
+      provider: function () {
+        return new HDWalletProvider({
+          privateKeys: [privKey],
+          providerOrUrl: 'https://rpc.moonriver.moonbeam.network',
+          chainId: 1285
+        });
+      },
+      gas: 2000000,
+      gasPrice: 3000000000,
+      network_id: 1285,
+      confirmations: 2,
+      timeoutBlocks: 200,
+      skipDryRun: true
+    },
+
+    aurora: {
+      provider: function () {
+        return new HDWalletProvider({
+          privateKeys: [privKey],
+          providerOrUrl: 'https://mainnet.aurora.dev',
+          chainId: 1313161554
+        });
+      },
+      gas: 2000000,
+      gasPrice: 0,
+      network_id: 1313161554,
+      confirmations: 2,
+      timeoutBlocks: 200,
+      skipDryRun: true
+    },
+
+    boba: {
+      provider: function () {
+        return new HDWalletProvider({
+          privateKeys: [privKey],
+          providerOrUrl: 'https://mainnet.boba.network',
+          chainId: 288
+        });
+      },
+      gas: 2000000,
+      gasPrice: 10000000000,
+      network_id: 288,
+      confirmations: 2,
+      timeoutBlocks: 200,
+      skipDryRun: true
+    },
+
+    //TODO:
+    arb: {
+      provider: function () {
+        // return new HDWalletProvider(privKey, "https://arb1.arbitrum.io/rpc")
+        return new HDWalletProvider(
+          {
+            privateKeys: [privKey],
+            providerOrUrl: 'https://arb1.arbitrum.io/rpc',
+            chainId: 42161
+          }
+        );
+      },
+      network_id: 42161,
+      gas: 1500000,
+      gasPrice: 1200000000,
+      confirmations: 2,
+      timeoutBlocks: 200,
+      skipDryRun: true
+    },
+
+    avax: {
+      provider: () => {
+        return new HDWalletProvider(
+          {
+            privateKeys: [privKey],
+            providerOrUrl: 'https://api.avax.network/ext/bc/C/rpc',
+            chainId: 43114
+          }
+        );
+      },
+      network_id: '*',
+      gas: 3000000,
+      gasPrice: 225000000000,
+    },
+
+    polygon: {
       networkCheckTimeout: 1000000,
       provider: () => {
-        return new HDWalletProvider(privKey, 'https://polygon-mainnet.infura.io/v3/' + infuraId)
+        return new HDWalletProvider(
+          {
+            privateKeys: [privKey],
+            providerOrUrl: 'https://rpc-mainnet.matic.quiknode.pro',
+            chainId: 137
+          }
+        )
       },
       network_id: 137,
       gas: 6000000,
-      gasPrice: 3000000000,
-      // confirmations: 2,
-      // timeoutBlocks: 200,
+      gasPrice: 30000000000,
+      confirmations: 2,
+      timeoutBlocks: 200,
       skipDryRun: true
     },
   },
