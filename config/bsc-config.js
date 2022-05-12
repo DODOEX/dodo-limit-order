@@ -10,8 +10,10 @@ module.exports = {
         RfqSender: "0x248A052BC03Db36Ca73Afb228E22B23391aFc658",
         FeeReceiver: "0x0BaC68017D3bE74010e9099bD4E01Fbe45e9C2F4",
 
+        RfqBot: "",
+
         //Account
         Owner: "0x7081685Ff3ff16FB6c0dF08AC93bdB7299EEEfc9",
-        // multiSigAddress: ""
+        multiSigAddress: "0xcaa42F09AF66A8BAE3A7445a7f63DAD97c11638b"
     }
 }

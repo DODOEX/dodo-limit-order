@@ -83,6 +83,7 @@ import {ECDSA} from "./external/ECDSA.sol";
 
         order.taker = taker;
         order.makerTokenFeeAmount = makerTokenFeeAmount;
+        order.takerFillAmount = order.takerAmount;
 
         bytes32 orderHashForTaker = _rfqOrderHash(order);
         require(ECDSA.recover(orderHashForTaker, takerSignature) == order.taker, "DLOP:INVALID_TAKER_SIGNATURE");

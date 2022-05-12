@@ -38,7 +38,8 @@ module.exports = {
    * $ truffle test --network <network-name>
    */
   deploySwitch: {
-    DEPLOY_LIMIT_ORDER: true
+    DEPLOY_LIMIT_ORDER: false,
+    DEPLOY_RFQ_BOT: true
   },
 
   networks: {

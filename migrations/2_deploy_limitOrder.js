@@ -6,6 +6,7 @@ const { GetConfig } = require("../configAdapter.js")
 
 const DODOLimitOrder = artifacts.require("DODOLimitOrder");
 const DODOLimitOrderBot = artifacts.require("DODOLimitOrderBot");
+const RfqBot = artifacts.require("DODORfqOrderBot");
 
 module.exports = async (deployer, network, accounts) => {
     let CONFIG = GetConfig(network, accounts)
@@ -22,6 +23,7 @@ module.exports = async (deployer, network, accounts) => {
     let feeReceiver = CONFIG.FeeReceiver;
     let limitBotSender = CONFIG.LimitBotSender;
     let rfqSender = CONFIG.RfqSender;
+    let rfqBotAddress = CONFIG.RfqBot;
 
     if (deploySwitch.DEPLOY_LIMIT_ORDER) {
         logger.log("====================================================");
@@ -63,5 +65,24 @@ module.exports = async (deployer, network, accounts) => {
                 logger.log("DODOLimitOrder AddAdminList tx: ", tx.tx);
             }
         }
+    }
+
+    if (deploySwitch.DEPLOY_RFQ_BOT) {
+        logger.log("====================================================");
+        logger.log("network type: " + network);
+        logger.log("Deploy time: " + new Date().toLocaleString());
+        logger.log("Deploy type: rfqBot");
+
+        if (rfqBotAddress == "") {
+            await deployer.deploy(RfqBot);
+            rfqBotAddress = RfqBot.address;
+            logger.log("RfqBot Address: ", rfqBotAddress);
+            const rfqBotInstance = await RfqBot.at(rfqBotAddress);
+            var tx = await rfqBotInstance.init(multiSigAddress, feeReceiver, DODOApproveAddress, DODOApproveProxyAddress);
+            logger.log("Init rfqBot Tx:", tx.tx);
+        }
+
+        //1. add sender to adminList
+        //2. add rfqBot to approveProxy
     }
 };
