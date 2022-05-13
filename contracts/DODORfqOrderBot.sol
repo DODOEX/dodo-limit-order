@@ -5,7 +5,7 @@
 
 pragma solidity 0.8.4;
 
-import {InitializableOwnable} from "./lib/InitializableOwnable.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 import {IDODOApproveProxy} from "./intf/IDODOApproveProxy.sol";
 import {IERC20} from "./intf/IERC20.sol";
 import {SafeERC20} from "./lib/SafeERC20.sol";
@@ -17,7 +17,7 @@ import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
  * @author DODO Breeder
  */
 
-contract DODORfqOrderBot is EIP712("DODO Limit Order Protocol", "1"), InitializableOwnable {
+contract DODORfqOrderBot is EIP712("DODO Limit Order Protocol", "1"), Ownable {
     using SafeERC20 for IERC20;
 
     bytes32 public constant RFQ_ORDER_TYPEHASH =
@@ -41,8 +41,8 @@ contract DODORfqOrderBot is EIP712("DODO Limit Order Protocol", "1"), Initializa
     //=============== Storage ===============
 
     address public _INSURANCE_;
-    address public _DODO_APPROVE_;
-    address public _DODO_APPROVE_PROXY_;
+    address public immutable _DODO_APPROVE_;
+    address public immutable _DODO_APPROVE_PROXY_;
     mapping(address => bool) public isAdmin;
 
     //=============== Events ===============
@@ -57,13 +57,13 @@ contract DODORfqOrderBot is EIP712("DODO Limit Order Protocol", "1"), Initializa
 
     //=============== Functions ===============
 
-    function init(
+    constructor(
         address owner,
         address insurance,
         address dodoApprove,
         address dodoApproveProxy
-    ) external {
-        initOwner(owner);
+    ) {
+        transferOwnership(owner);
         _INSURANCE_ = insurance;
         _DODO_APPROVE_ = dodoApprove;
         _DODO_APPROVE_PROXY_ = dodoApproveProxy;
