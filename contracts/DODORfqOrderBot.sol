@@ -8,7 +8,6 @@ pragma solidity 0.8.4;
 import {InitializableOwnable} from "./lib/InitializableOwnable.sol";
 import {IDODOApproveProxy} from "./intf/IDODOApproveProxy.sol";
 import {IERC20} from "./intf/IERC20.sol";
-import {SafeMath} from "./lib/SafeMath.sol";
 import {SafeERC20} from "./lib/SafeERC20.sol";
 import {EIP712} from "./external/draft-EIP712.sol";
 import {ECDSA} from "./external/ECDSA.sol";
@@ -18,19 +17,13 @@ import {ECDSA} from "./external/ECDSA.sol";
  * @author DODO Breeder
  */
 
- contract DODORfqOrderBot is EIP712("DODO Limit Order Protocol", "1"), InitializableOwnable {
-    using SafeMath for uint256;
+contract DODORfqOrderBot is EIP712("DODO Limit Order Protocol", "1"), InitializableOwnable {
     using SafeERC20 for IERC20;
 
-    //=============== Storage ===============
-    address public _TOKEN_RECEIVER_;
-    address public _DODO_APPROVE_;
-    address public _DODO_APPROVE_PROXY_;
-    mapping (address => bool) public isAdminListed;
-
-    bytes32 constant public RFQ_ORDER_TYPEHASH = keccak256(
-        "Order(address makerToken,address takerToken,uint256 makerAmount,uint256 takerAmount,uint256 makerTokenFeeAmount,uint256 takerFillAmount,address maker,address taker,uint256 expiration,uint256 slot)"
-    );
+    bytes32 public constant RFQ_ORDER_TYPEHASH =
+        keccak256(
+            "Order(address makerToken,address takerToken,uint256 makerAmount,uint256 takerAmount,uint256 makerTokenFeeAmount,uint256 takerFillAmount,address maker,address taker,uint256 expiration,uint256 slot)"
+        );
 
     struct RfqOrder {
         address makerToken;
@@ -44,41 +37,57 @@ import {ECDSA} from "./external/ECDSA.sol";
         uint256 expiration;
         uint256 slot;
     }
-    
-    //=============== Event ===============
-    event addAdmin(address admin);
-    event removeAdmin(address admin);
-    event changeReceiver(address newReceiver);
+
+    //=============== Storage ===============
+
+    address public _INSURANCE_;
+    address public immutable _DODO_APPROVE_;
+    address public immutable _DODO_APPROVE_PROXY_;
+    mapping(address => bool) public isAdmin;
+
+    //=============== Events ===============
+
+    event AddAdmin(address admin);
+
+    event RemoveAdmin(address admin);
+
+    event ChangeInsurance(address newReceiver);
+
     event RFQByPlatformFilled();
 
+    //=============== Functions ===============
+
     function init(
-        address owner, 
-        address tokenReceiver,
+        address owner,
+        address insurance,
         address dodoApprove,
         address dodoApproveProxy
     ) external {
         initOwner(owner);
-        _TOKEN_RECEIVER_ = tokenReceiver;
+        _INSURANCE_ = insurance;
         _DODO_APPROVE_ = dodoApprove;
         _DODO_APPROVE_PROXY_ = dodoApproveProxy;
     }
 
-
     function matchingRFQByPlatform(
         RfqOrder memory order,
-        bytes memory makerSignature,
-        bytes memory takerSignature,
-        uint256 thresholdAddMakerTokenAmount,
+        bytes calldata makerSignature,
+        bytes calldata takerSignature,
+        uint256 maxTakerCompensation,
         uint256 makerTokenFeeAmount,
         address taker,
         address dodoRouteProxy,
-        bytes memory dodoApiData
-    ) public {
-        require(isAdminListed[msg.sender], "ACCESS_DENIED");
-        require(order.expiration > block.timestamp, "DLOP: EXPIRE_ORDER");
+        bytes calldata dodoApiData
+    ) external {
+        require(isAdmin[msg.sender], "ACCESS_DENIED");
+        require(order.expiration > block.timestamp, "DLOP:EXPIRE_ORDER");
 
+        // maker sign order first
         bytes32 orderHashForMaker = _rfqOrderHash(order);
-        require(ECDSA.recover(orderHashForMaker, makerSignature) == order.maker, "DLOP:INVALID_MAKER_SIGNATURE");
+        require(
+            ECDSA.recover(orderHashForMaker, makerSignature) == order.maker,
+            "DLOP:INVALID_MAKER_SIGNATURE"
+        );
         require(order.taker == address(0), "DLOP:TAKER_INVALID");
 
         order.taker = taker;
@@ -86,71 +95,93 @@ import {ECDSA} from "./external/ECDSA.sol";
         order.takerFillAmount = order.takerAmount;
 
         bytes32 orderHashForTaker = _rfqOrderHash(order);
-        require(ECDSA.recover(orderHashForTaker, takerSignature) == order.taker, "DLOP:INVALID_TAKER_SIGNATURE");
+        require(
+            ECDSA.recover(orderHashForTaker, takerSignature) == order.taker,
+            "DLOP:INVALID_TAKER_SIGNATURE"
+        );
 
-        _settleRFQ(order, thresholdAddMakerTokenAmount, dodoRouteProxy, dodoApiData);
+        _settleRFQ(order, maxTakerCompensation, dodoRouteProxy, dodoApiData);
 
         emit RFQByPlatformFilled();
     }
 
     function _settleRFQ(
-        RfqOrder memory order, 
-        uint256 thresholdAddMakerTokenAmount,
+        RfqOrder memory order,
+        uint256 maxTakerCompensation,
         address dodoRouteProxy,
         bytes memory dodoApiData
     ) internal {
+        // cache
         address taker = order.taker;
-        address maker = order.maker;
         uint256 takerFillAmount = order.takerAmount;
         uint256 makerTokenFeeAmount = order.makerTokenFeeAmount;
         address orderMakerToken = order.makerToken;
         address orderTakerToken = order.takerToken;
         uint256 orderMakerAmount = order.makerAmount;
-        
-        IDODOApproveProxy(_DODO_APPROVE_PROXY_).claimTokens(orderTakerToken, taker, address(this), takerFillAmount);
 
-        uint256 originMakerBalance = IERC20(orderMakerToken).balanceOf(address(this));
+        // flash swap
+        IDODOApproveProxy(_DODO_APPROVE_PROXY_).claimTokens(
+            orderTakerToken,
+            taker,
+            address(this),
+            takerFillAmount
+        );
+
+        // transfer taker token to maker token
+        uint256 originMakerTokenBalance = IERC20(orderMakerToken).balanceOf(address(this));
         _approveMax(IERC20(orderTakerToken), _DODO_APPROVE_, takerFillAmount);
         (bool success, ) = dodoRouteProxy.call(dodoApiData);
         require(success, "API_SWAP_FAILED");
-        uint256 makerBalance = IERC20(orderMakerToken).balanceOf(address(this));
-        uint256 returnMakerAmount = makerBalance.sub(originMakerBalance);
+        uint256 makerTokenBalance = IERC20(orderMakerToken).balanceOf(address(this));
+        uint256 makerTokenAmount = makerTokenBalance - originMakerTokenBalance;
 
-        if(returnMakerAmount >= orderMakerAmount) {
-            uint leftMakerTokenAmount = returnMakerAmount.sub(orderMakerAmount.sub(makerTokenFeeAmount));
-            IERC20(orderMakerToken).safeTransfer(_TOKEN_RECEIVER_, leftMakerTokenAmount);
+        // calculate taker receive
+        uint256 takerRececive = (orderMakerAmount * takerFillAmount) /
+            order.takerAmount -
+            makerTokenFeeAmount;
+        if (makerTokenAmount >= takerRececive) {
+            // refund the overpayment
+            uint256 leftMakerTokenAmount = makerTokenAmount - takerRececive;
+            IERC20(orderMakerToken).safeTransfer(_INSURANCE_, leftMakerTokenAmount);
         } else {
-            uint addMakerTokenAmount = orderMakerAmount.sub(returnMakerAmount);
-            require(addMakerTokenAmount < thresholdAddMakerTokenAmount, "DLOP: NEED_MORE_MAKERTOKEN");
-            IDODOApproveProxy(_DODO_APPROVE_PROXY_).claimTokens(orderMakerToken, maker, address(this), addMakerTokenAmount);
-            if(makerTokenFeeAmount > 0) {
-                IERC20(orderMakerToken).safeTransfer(_TOKEN_RECEIVER_, makerTokenFeeAmount);
-            }
+            // supplemental payment
+            uint256 takerCompensation = takerRececive - makerTokenAmount;
+            require(takerCompensation <= maxTakerCompensation, "DLOP:COMPENSATION_EXCEED");
+            IDODOApproveProxy(_DODO_APPROVE_PROXY_).claimTokens(
+                orderMakerToken,
+                _INSURANCE_,
+                address(this),
+                takerCompensation
+            );
         }
 
-        IERC20(orderMakerToken).safeTransfer(taker, orderMakerAmount.sub(makerTokenFeeAmount));
+        // transfer to taker
+        IERC20(orderMakerToken).safeTransfer(taker, takerRececive);
     }
-
 
     //============  Ownable ============
-    function addAdminList (address userAddr) external onlyOwner {
-        isAdminListed[userAddr] = true;
-        emit addAdmin(userAddr);
+    function addAdmin(address userAddr) external onlyOwner {
+        isAdmin[userAddr] = true;
+        emit AddAdmin(userAddr);
     }
 
-    function removeAdminList (address userAddr) external onlyOwner {
-        isAdminListed[userAddr] = false;
-        emit removeAdmin(userAddr);
+    function removeAdmin(address userAddr) external onlyOwner {
+        isAdmin[userAddr] = false;
+        emit RemoveAdmin(userAddr);
     }
 
     function changeTokenReceiver(address newTokenReceiver) external onlyOwner {
-        _TOKEN_RECEIVER_ = newTokenReceiver;
-        emit changeReceiver(newTokenReceiver);
+        _INSURANCE_ = newTokenReceiver;
+        emit ChangeInsurance(newTokenReceiver);
     }
 
-
     //============  internal ============
-    function _approveMax(IERC20 token,address to,uint256 amount) internal {
+
+    function _approveMax(
+        IERC20 token,
+        address to,
+        uint256 amount
+    ) internal {
         uint256 allowance = token.allowance(address(this), to);
         if (allowance < amount) {
             if (allowance > 0) {
@@ -160,23 +191,34 @@ import {ECDSA} from "./external/ECDSA.sol";
         }
     }
 
-    function _rfqOrderHash(RfqOrder memory order) private view returns(bytes32) {
-        return _hashTypedDataV4(
-            keccak256(
-                abi.encode(
-                    RFQ_ORDER_TYPEHASH,
-                    order.makerToken,
-                    order.takerToken,
-                    order.makerAmount,
-                    order.takerAmount,
-                    order.makerTokenFeeAmount,
-                    order.takerFillAmount,
-                    order.maker,
-                    order.taker,
-                    order.expiration,
-                    order.slot
-                )
-            )
-        );
+    function _rfqOrderHash(RfqOrder memory order) private view returns (bytes32) {
+        // keccak256(
+        //     abi.encode(
+        //         RFQ_ORDER_TYPEHASH,
+        //         order.makerToken,
+        //         order.takerToken,
+        //         order.makerAmount,
+        //         order.takerAmount,
+        //         order.makerTokenFeeAmount,
+        //         order.takerFillAmount,
+        //         order.maker,
+        //         order.taker,
+        //         order.expiration,
+        //         order.slot
+        //     )
+        // )
+        bytes32 structHash;
+        bytes32 orderTypeHash = RFQ_ORDER_TYPEHASH;
+        assembly {
+            let start := sub(order, 32)
+            let tmp := mload(start)
+            // 352 = (1+10)*32
+            // [0...32)   bytes: EIP712_ORDER_TYPE
+            // [32...352) bytes: order
+            mstore(start, orderTypeHash)
+            structHash := keccak256(start, 352)
+            mstore(start, tmp)
+        }
+        return _hashTypedDataV4(structHash);
     }
- }
+}
