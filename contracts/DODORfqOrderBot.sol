@@ -9,8 +9,8 @@ import {InitializableOwnable} from "./lib/InitializableOwnable.sol";
 import {IDODOApproveProxy} from "./intf/IDODOApproveProxy.sol";
 import {IERC20} from "./intf/IERC20.sol";
 import {SafeERC20} from "./lib/SafeERC20.sol";
-import {EIP712} from "./external/draft-EIP712.sol";
-import {ECDSA} from "./external/ECDSA.sol";
+import {EIP712} from "@openzeppelin/contracts/utils/cryptography/draft-EIP712.sol";
+import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 /**
  * @title DODORfqOrderBot
@@ -41,8 +41,8 @@ contract DODORfqOrderBot is EIP712("DODO Limit Order Protocol", "1"), Initializa
     //=============== Storage ===============
 
     address public _INSURANCE_;
-    address public immutable _DODO_APPROVE_;
-    address public immutable _DODO_APPROVE_PROXY_;
+    address public _DODO_APPROVE_;
+    address public _DODO_APPROVE_PROXY_;
     mapping(address => bool) public isAdmin;
 
     //=============== Events ===============
