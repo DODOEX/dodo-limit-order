@@ -1,5 +1,5 @@
 ## DODO-Limit-Order Audit Scope
 
-- contracts/DODOLimitOrder.sol
-- contracts/DODOLimitOrderBot.sol
-- contracts/lib/ArgumentsDecoder.sol
+- src/DODOLimitOrder.sol
+- src/DODOLimitOrderBot.sol
+- src/lib/ArgumentsDecoder.sol
