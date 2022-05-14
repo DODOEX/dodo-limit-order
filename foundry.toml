@@ -1,0 +1,10 @@
+[default]
+optimizer = true
+optimizer_runs = 200
+solc-version = "0.8.4"
+verbosity = 4
+remappings = [
+  '@rari-capital/solmate/src=node_modules/@rari-capital/solmate/src'
+]
+
+# See more config options https://github.com/gakonst/foundry/tree/master/config
