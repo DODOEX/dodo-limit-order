@@ -1,4 +1,5 @@
 .env
+.vscode
 
 artifacts/
 cache-hardhat/
