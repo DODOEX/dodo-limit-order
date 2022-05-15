@@ -5,16 +5,24 @@
 
 pragma solidity 0.8.4;
 
-import "../node_modules/@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 import {IDODOApproveProxy} from "./intf/IDODOApproveProxy.sol";
 import {IERC20} from "./intf/IERC20.sol";
 import {SafeERC20} from "./lib/SafeERC20.sol";
-import {EIP712} from "../node_modules/@openzeppelin/contracts/utils/cryptography/draft-EIP712.sol";
-import {ECDSA} from "../node_modules/@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import {EIP712} from "@openzeppelin/contracts/utils/cryptography/draft-EIP712.sol";
+import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 /**
  * @title DODOGaslessTrading
  * @author DODO Breeder
+ * @notice DODO Gasless Trading is an insurance service. It is part of DLOP, DODO Limit Order Protocol.
+ * The trader signs the order and sends it to DODO's backend service. DODO guarantees that the order
+ * will be submitted and filled without any slippage.
+ * DODO does not act directly as a counterparty to the trader, but integrates all the on-chain liquidity
+ * through DODO's routing system. If the final result is better than the original order, DODO collects
+ * these additional token as a premium. Otherwise DODO compensates the difference to the trader.
+ * When compensating, DODO will try to pay toToken first. If the insurance inventory is not enough
+ * to pay, then the compensation will be paid in the fromToken.
  */
 
 contract DODOGaslessTrading is
@@ -74,7 +82,7 @@ contract DODOGaslessTrading is
 
     function matchingRFQByPlatform(
         GaslessOrder calldata order,
-        bytes calldata traderSignature,
+        bytes calldata signature,
         bytes calldata dodoRouteData,
         uint256 maxCompensation
     ) external {
@@ -83,7 +91,7 @@ contract DODOGaslessTrading is
         // verify order
         bytes32 orderHash = _hashOrder(order);
         require(
-            ECDSA.recover(orderHash, traderSignature) == order.signer,
+            ECDSA.recover(orderHash, signature) == order.signer,
             "DLOP:INVALID_SIGNATURE"
         );
         require(order.expiration > block.timestamp, "DLOP:ORDER_EXPIRED");
