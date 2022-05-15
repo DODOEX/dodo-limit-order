@@ -105,14 +105,23 @@ contract DODOGaslessTrading is
         );
 
         // swap using DODO Route
-        uint256 originToTokenBalance = IERC20(order.toToken).balanceOf(
-            address(this)
-        );
-        _approveMax(IERC20(order.fromToken), _DODO_APPROVE_, order.fromAmount);
-        (bool success, ) = _DODO_ROUTE_PROXY_.call(dodoRouteData);
-        require(success, "DLOP:DODO_ROUTE_FAILED");
-        uint256 toTokenBalance = IERC20(order.toToken).balanceOf(address(this));
-        uint256 swapResult = toTokenBalance - originToTokenBalance;
+        uint256 swapResult;
+        {
+            uint256 originToTokenBalance = IERC20(order.toToken).balanceOf(
+                address(this)
+            );
+            _approveMax(
+                IERC20(order.fromToken),
+                _DODO_APPROVE_,
+                order.fromAmount
+            );
+            (bool success, ) = _DODO_ROUTE_PROXY_.call(dodoRouteData);
+            require(success, "DLOP:DODO_ROUTE_FAILED");
+            uint256 toTokenBalance = IERC20(order.toToken).balanceOf(
+                address(this)
+            );
+            swapResult = toTokenBalance - originToTokenBalance;
+        }
 
         // pay trader TO token
         if (swapResult > order.toAmount) {
