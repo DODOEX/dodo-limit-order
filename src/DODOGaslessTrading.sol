@@ -51,7 +51,6 @@ contract DODOGaslessTrading is
     address public _INSURANCE_;
     address public immutable _DODO_APPROVE_;
     address public immutable _DODO_APPROVE_PROXY_;
-    address public immutable _DODO_ROUTE_PROXY_;
     mapping(address => bool) public _IS_ADMIN_;
     mapping(bytes32 => bool) public _IS_FILLED_;
 
@@ -71,20 +70,19 @@ contract DODOGaslessTrading is
         address owner,
         address insurance,
         address dodoApprove,
-        address dodoApproveProxy,
-        address dodoRouteProxy
+        address dodoApproveProxy
     ) {
         transferOwnership(owner);
         _INSURANCE_ = insurance;
         _DODO_APPROVE_ = dodoApprove;
         _DODO_APPROVE_PROXY_ = dodoApproveProxy;
-        _DODO_ROUTE_PROXY_ = dodoRouteProxy;
     }
 
     function matchingRFQByPlatform(
         GaslessOrder calldata order,
         bytes calldata signature,
-        bytes calldata dodoRouteData,
+        bytes calldata routeData,
+        address route,
         uint256 maxCompensation
     ) external {
         require(_IS_ADMIN_[msg.sender], "ACCESS_DENIED");
@@ -96,7 +94,7 @@ contract DODOGaslessTrading is
             "DLOP:INVALID_SIGNATURE"
         );
         require(order.expiration > block.timestamp, "DLOP:ORDER_EXPIRED");
-        require(_IS_FILLED_[orderHash],"DLOP:ORDER_FILLED");
+        require(_IS_FILLED_[orderHash], "DLOP:ORDER_FILLED");
 
         // flash swap: transfer trader's FROM token in
         IDODOApproveProxy(_DODO_APPROVE_PROXY_).claimTokens(
@@ -117,7 +115,8 @@ contract DODOGaslessTrading is
                 _DODO_APPROVE_,
                 order.fromAmount
             );
-            (bool success, ) = _DODO_ROUTE_PROXY_.call(dodoRouteData);
+            require(route != _DODO_APPROVE_PROXY_);
+            (bool success, ) = route.call(routeData);
             require(success, "DLOP:DODO_ROUTE_FAILED");
             uint256 toTokenBalance = IERC20(order.toToken).balanceOf(
                 address(this)
