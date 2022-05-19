@@ -7,7 +7,7 @@ pragma solidity 0.8.4;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import {IDODOApproveProxy} from "./intf/IDODOApproveProxy.sol";
-import {IERC20} from "./intf/IERC20.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "./lib/SafeERC20.sol";
 import {EIP712} from "@openzeppelin/contracts/utils/cryptography/draft-EIP712.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
@@ -94,7 +94,7 @@ contract DODOGaslessTrading is
             "DLOP:INVALID_SIGNATURE"
         );
         require(order.expiration > block.timestamp, "DLOP:ORDER_EXPIRED");
-        require(_IS_FILLED_[orderHash], "DLOP:ORDER_FILLED");
+        require(_IS_FILLED_[orderHash] == false, "DLOP:ORDER_FILLED");
 
         // flash swap: transfer trader's FROM token in
         IDODOApproveProxy(_DODO_APPROVE_PROXY_).claimTokens(
@@ -203,7 +203,7 @@ contract DODOGaslessTrading is
     {
         // keccak256(
         //     abi.encode(
-        //         RFQ_ORDER_TYPEHASH,
+        //         GASLESS_ORDER_TYPEHASH,
         //         order.signer,
         //         order.fromToken,
         //         order.toToken,
@@ -219,7 +219,7 @@ contract DODOGaslessTrading is
             let start := sub(order, 32)
             let tmp := mload(start)
             // 256 = (1+7)*32
-            // [0...32)   bytes: EIP712_ORDER_TYPE
+            // [0...32)   bytes: GASLESS_ORDER_TYPE
             // [32...256) bytes: order
             mstore(start, orderTypeHash)
             structHash := keccak256(start, 256)
