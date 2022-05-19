@@ -5,7 +5,7 @@
 
 pragma solidity 0.8.4;
 
-import {IERC20} from "./intf/IERC20.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeMath} from "./lib/SafeMath.sol";
 import {SafeERC20} from "./lib/SafeERC20.sol";
 import {EIP712} from "./external/draft-EIP712.sol";

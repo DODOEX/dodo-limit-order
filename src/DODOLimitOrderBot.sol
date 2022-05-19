@@ -6,7 +6,7 @@
 pragma solidity 0.8.4;
 
 import {InitializableOwnable} from "./lib/InitializableOwnable.sol";
-import {IERC20} from "./intf/IERC20.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeMath} from "./lib/SafeMath.sol";
 import {SafeERC20} from "./lib/SafeERC20.sol";
 
