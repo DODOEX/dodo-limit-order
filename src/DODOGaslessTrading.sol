@@ -94,7 +94,7 @@ contract DODOGaslessTrading is
             "DLOP:INVALID_SIGNATURE"
         );
         require(order.expiration > block.timestamp, "DLOP:ORDER_EXPIRED");
-        require(_IS_FILLED_[orderHash] == false, "DLOP:ORDER_FILLED");
+        require(!_IS_FILLED_[orderHash], "DLOP:ORDER_FILLED");
 
         // flash swap: transfer trader's FROM token in
         IDODOApproveProxy(_DODO_APPROVE_PROXY_).claimTokens(
@@ -115,7 +115,7 @@ contract DODOGaslessTrading is
                 _DODO_APPROVE_,
                 order.fromAmount
             );
-            require(route != _DODO_APPROVE_PROXY_);
+            require(route != _DODO_APPROVE_PROXY_, "DLOP:ROUTE_ADDRESS_REJECT");
             (bool success, ) = route.call(routeData);
             require(success, "DLOP:DODO_ROUTE_FAILED");
             uint256 toTokenBalance = IERC20(order.toToken).balanceOf(
