@@ -1,19 +1,19 @@
 var eth_sig_util_1 = require("eth-sig-util");
 const { parseFixed } = require('@ethersproject/bignumber')
 
-var dodoLimitOrder = "0x969782CEdA52E3a8991C8f91Add31406A781580F"
+var gaslessTrading = "0x0b7108e278c2e77e4e4f5c93d9e5e9a11ac837fc"
 
 var privKeyInput = process.env.privKey;
 var privKey = Buffer.from(privKeyInput, 'hex');
 
 var order = {
-    signer: "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
-    fromToken: "0x969782CEdA52E3a8991C8f91Add31406A781580F",//用户买的币地址
-    toToken: "0xce7afae63edd2719cd9f46f8afa80eb490ede6a8",//用户卖的币地址
-    fromAmount: parseFixed('10', 18).toString(), //做市商的报价
-    toAmount: parseFixed('1', 18).toString(), //用户的输入
-    expiration: Math.floor(new Date().getTime() / 1000 + 60 * 60 * 24 * 10), //做市商订单的过期时间，时间戳 秒
-    slot: Math.round(Math.random() * Date.now()) + '' //做市商维护的唯一订单标识
+    signer: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+    fromToken: "0xf5a2fe45f4f1308502b1c136b9ef8af136141382",
+    toToken: "0x42997ac9251e5bb0a61f4ff790e5b991ea07fd9b",
+    fromAmount: parseFixed('100', 18).toString(), 
+    toAmount: parseFixed('200', 18).toString(), 
+    expiration: 1792883473, // Math.floor(new Date().getTime() / 1000 + 60 * 60 * 24 * 10), 
+    slot: 1234 // Math.round(Math.random() * Date.now()) + '' 
 }
 
 var EIP712_DOMAIN = [
@@ -69,8 +69,8 @@ function buildOrderTypedData(rfqOrder) {
         domain: {
             name: 'DODO Limit Order Protocol',
             version: '1',
-            chainId: 4,
-            verifyingContract: dodoLimitOrder,
+            chainId: 99, // in foundry test, the default chainId is 99
+            verifyingContract: gaslessTrading,
         },
         message: rfqOrder,
     };

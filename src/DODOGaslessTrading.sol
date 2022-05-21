@@ -25,6 +25,16 @@ import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
  * to pay, then the compensation will be paid in the fromToken.
  */
 
+struct GaslessOrder {
+    address signer;
+    address fromToken;
+    address toToken;
+    uint256 fromAmount;
+    uint256 toAmount;
+    uint256 expiration;
+    uint256 slot;
+}
+
 contract DODOGaslessTrading is
     EIP712("DODO Limit Order Protocol", "1"),
     Ownable
@@ -35,16 +45,6 @@ contract DODOGaslessTrading is
         keccak256(
             "Order(address signer,address fromToken,address toToken,uint256 fromAmount,uint256 toAmount,uint256 expiration,uint256 slot)"
         );
-
-    struct GaslessOrder {
-        address signer;
-        address fromToken;
-        address toToken;
-        uint256 fromAmount;
-        uint256 toAmount;
-        uint256 expiration;
-        uint256 slot;
-    }
 
     //=============== Storage ===============
 
@@ -94,7 +94,7 @@ contract DODOGaslessTrading is
             "DLOP:INVALID_SIGNATURE"
         );
         require(order.expiration > block.timestamp, "DLOP:ORDER_EXPIRED");
-        require(_IS_FILLED_[orderHash] == false, "DLOP:ORDER_FILLED");
+        require(!_IS_FILLED_[orderHash], "DLOP:ORDER_FILLED");
 
         // flash swap: transfer trader's FROM token in
         IDODOApproveProxy(_DODO_APPROVE_PROXY_).claimTokens(
@@ -115,7 +115,7 @@ contract DODOGaslessTrading is
                 _DODO_APPROVE_,
                 order.fromAmount
             );
-            require(route != _DODO_APPROVE_PROXY_);
+            require(route != _DODO_APPROVE_PROXY_, "DLOP:ROUTE_ADDRESS_REJECT");
             (bool success, ) = route.call(routeData);
             require(success, "DLOP:DODO_ROUTE_FAILED");
             uint256 toTokenBalance = IERC20(order.toToken).balanceOf(
@@ -125,7 +125,7 @@ contract DODOGaslessTrading is
         }
 
         // pay trader TO token
-        if (swapResult > order.toAmount) {
+        if (swapResult >= order.toAmount) {
             // fund extra TO token to insurance
             IERC20(order.toToken).safeTransfer(order.signer, order.toAmount);
             IERC20(order.toToken).safeTransfer(
@@ -140,7 +140,7 @@ contract DODOGaslessTrading is
                 compensation <= maxCompensation,
                 "DLOP:COMPENSATION_EXCEED"
             );
-            if (IERC20(order.toToken).balanceOf(_INSURANCE_) > compensation) {
+            if (IERC20(order.toToken).balanceOf(_INSURANCE_) >= compensation) {
                 // compensate TO token if balance enough
                 IDODOApproveProxy(_DODO_APPROVE_PROXY_).claimTokens(
                     order.toToken,
@@ -219,7 +219,7 @@ contract DODOGaslessTrading is
             let start := sub(order, 32)
             let tmp := mload(start)
             // 256 = (1+7)*32
-            // [0...32)   bytes: GASLESS_ORDER_TYPE
+            // [0...32)   bytes: GASLESS_ORDER_TYPEHASH
             // [32...256) bytes: order
             mstore(start, orderTypeHash)
             structHash := keccak256(start, 256)
