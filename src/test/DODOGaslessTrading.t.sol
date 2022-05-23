@@ -122,7 +122,7 @@ contract DODOGaslessTradingTest is Test {
     function testRFQWhenRouteIsDODOApproveProxy() public {
         addAdmin(address(this));
         approveUseToken1();
-        vm.expectRevert();
+        vm.expectRevert(bytes("DLOP:ROUTE_ADDRESS_REJECT"));
         gaslessTrading.matchingRFQByPlatform(order, signature, routeData, address(dodoApproveProxy), 5 * 10 ** 18);
     }
 
