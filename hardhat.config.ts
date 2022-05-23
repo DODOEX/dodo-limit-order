@@ -8,6 +8,8 @@ import 'hardhat-gas-reporter';
 import 'solidity-coverage';
 import { HardhatUserConfig, subtask } from 'hardhat/config';
 import { TASK_COMPILE_SOLIDITY_GET_SOURCE_PATHS } from 'hardhat/builtin-tasks/task-names';
+import "hardhat-deploy"
+import { ethers } from "ethers"
 
 // default values here to avoid failures when running hardhat
 const RINKEBY_RPC = process.env.RINKEBY_RPC || '1'.repeat(32);
@@ -47,8 +49,15 @@ const config: HardhatUserConfig = {
     hardhat: { chainId: 1337 },
     rinkeby: {
       url: RINKEBY_RPC,
+      chainId: 4,
       accounts: [PRIVATE_KEY],
+      deploy: ["./deploy/rinkeby/"],
     }
+  },
+  namedAccounts: {
+    deployer: {
+      default: 0,
+    },
   },
   solidity: {
     version: foundry.default?.solc || SOLC_DEFAULT,
