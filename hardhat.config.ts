@@ -14,6 +14,7 @@ import { ethers } from "ethers"
 // default values here to avoid failures when running hardhat
 const RINKEBY_RPC = process.env.RINKEBY_RPC || '1'.repeat(32);
 const PRIVATE_KEY = process.env.PRIVATE_KEY || '1'.repeat(64);
+const TRUFFLE_DASHBOARD_RPC = "http://localhost:24012/rpc";
 const SOLC_DEFAULT = '0.8.10';
 
 // try use forge config
@@ -52,6 +53,16 @@ const config: HardhatUserConfig = {
       chainId: 4,
       accounts: [PRIVATE_KEY],
       deploy: ["./deploy/rinkeby/"],
+    },
+    arbi_testnet: {
+      url: TRUFFLE_DASHBOARD_RPC,
+      chainId: 421611,
+      deploy: ["./deploy/arbitrum_rinkeby/"],
+    },
+    goerli: {
+      url: TRUFFLE_DASHBOARD_RPC,
+      chainId: 5,
+      deploy: ["./deploy/goerli/"],
     }
   },
   namedAccounts: {
@@ -77,7 +88,29 @@ const config: HardhatUserConfig = {
   },
   etherscan: {
     // API key for Etherscan. https://etherscan.io/
-    apiKey: process.env.ETHERSCAN_API_KEY ?? '',
+    apiKey: {
+      mainnet: process.env.ETHERSCAN_API_KEY ?? '',
+      arbi_testnet: "9RSHRSVHJYZA631TN23NXDD14E3EY7I1VW",
+      goerli: "TRGAKHZ7J913ZX5KAAU491FK5MMKH3P9EN",
+    },
+    customChains: [
+      {
+        network: "arbi_testnet",
+        chainId: 421611,
+        urls: {
+          apiURL: "https://api-testnet.arbiscan.io/api",
+          browserURL: "https://testnet.arbiscan.io/"
+        }
+      },
+      {
+        network: "goerli",
+        chainId: 5,
+        urls: {
+          apiURL: "https://api-goerli.etherscan.io/api",
+          browserURL: "https://goerli.etherscan.io/"
+        }
+      }
+    ]
   },
 };
 
