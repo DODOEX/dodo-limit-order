@@ -63,6 +63,11 @@ const config: HardhatUserConfig = {
       url: TRUFFLE_DASHBOARD_RPC,
       chainId: 5,
       deploy: ["./deploy/goerli/"],
+    },
+    kcc: {
+      url: TRUFFLE_DASHBOARD_RPC,
+      chainId: 321,
+      deploy: ["./deploy/kcc/"],
     }
   },
   namedAccounts: {
@@ -92,6 +97,7 @@ const config: HardhatUserConfig = {
       mainnet: process.env.ETHERSCAN_API_KEY ?? '',
       arbi_testnet: "9RSHRSVHJYZA631TN23NXDD14E3EY7I1VW",
       goerli: "TRGAKHZ7J913ZX5KAAU491FK5MMKH3P9EN",
+      kcc: "9l0cX20NCc2EHAF3VjN6"
     },
     customChains: [
       {
@@ -108,6 +114,14 @@ const config: HardhatUserConfig = {
         urls: {
           apiURL: "https://api-goerli.etherscan.io/api",
           browserURL: "https://goerli.etherscan.io/"
+        }
+      },
+      {
+        network: "kcc",
+        chainId: 321,
+        urls: {
+          apiURL: "https://api.explorer.kcc.io/vipapi",
+          browserURL: "https://explorer.kcc.io/"
         }
       }
     ]
