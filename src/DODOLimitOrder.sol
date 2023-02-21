@@ -6,11 +6,13 @@
 pragma solidity 0.8.4;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import {SafeMath} from "./lib/SafeMath.sol";
 import {SafeERC20} from "./lib/SafeERC20.sol";
 import {EIP712} from "./external/draft-EIP712.sol";
 import {ECDSA} from "./external/ECDSA.sol";
 import {IDODOApproveProxy} from "./intf/IDODOApproveProxy.sol";
+import {IERC1271Wallet} from "./intf/IERC1271Wallet.sol";
 import {InitializableOwnable} from "./lib/InitializableOwnable.sol";
 import "./lib/ArgumentsDecoder.sol";
 
@@ -18,7 +20,7 @@ import "./lib/ArgumentsDecoder.sol";
  * @title DODOLimitOrder
  * @author DODO Breeder
  */
-contract DODOLimitOrder is EIP712("DODO Limit Order Protocol", "1"), InitializableOwnable{
+contract DODOLimitOrder is EIP712("DODO Limit Order Protocol", "1"), InitializableOwnable, ReentrancyGuard {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
     using ArgumentsDecoder for bytes;
@@ -88,7 +90,7 @@ contract DODOLimitOrder is EIP712("DODO Limit Order Protocol", "1"), Initializab
         uint256 takerFillAmount,
         uint256 thresholdTakerAmount,
         bytes memory takerInteraction
-    ) public returns(uint256 curTakerFillAmount, uint256 curMakerFillAmount) {
+    ) public nonReentrant returns(uint256 curTakerFillAmount, uint256 curMakerFillAmount) {
         bytes32 orderHash = _orderHash(order);
         uint256 filledTakerAmount = _FILLED_TAKER_AMOUNT_[orderHash];
 
@@ -96,7 +98,11 @@ contract DODOLimitOrder is EIP712("DODO Limit Order Protocol", "1"), Initializab
 
         require(order.taker == msg.sender, "DLOP:PRIVATE_ORDER");
 
-        require(ECDSA.recover(orderHash, signature) == order.maker, "DLOP:INVALID_SIGNATURE");
+        if (_isContract(order.maker)) {
+            _verifyERC1271WalletSignature(order.maker, orderHash, signature);
+        } else {
+            require(ECDSA.recover(orderHash, signature) == order.maker, "DLOP:INVALID_SIGNATURE");
+        }
         require(order.expiration > block.timestamp, "DLOP: EXPIRE_ORDER");
 
 
@@ -252,5 +258,18 @@ contract DODOLimitOrder is EIP712("DODO Limit Order Protocol", "1"), Initializab
                 )
             )
         );
+    }
+
+    function _verifyERC1271WalletSignature(
+        address _addr,
+        bytes32 _hash,
+        bytes memory _signature
+    ) internal {
+        bytes4 result = IERC1271Wallet(_addr).isValidSignature(_hash, _signature);
+        require(result == 0x1626ba7e, "INVALID_SIGNATURE");
+    }
+
+    function _isContract(address account) internal view returns (bool) {
+        return account.code.length > 0;
     }
 }
