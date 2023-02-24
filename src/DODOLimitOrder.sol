@@ -36,31 +36,12 @@ contract DODOLimitOrder is EIP712("DODO Limit Order Protocol", "1"), Initializab
         uint256 salt;
     }
 
-    struct RfqOrder {
-        address makerToken;
-        address takerToken;
-        uint256 makerAmount;
-        uint256 takerAmount;
-        uint256 makerTokenFeeAmount;
-        uint256 takerFillAmount;
-        address maker;
-        address taker;
-        uint256 expiration;
-        uint256 slot;
-    }
-
     bytes32 constant public ORDER_TYPEHASH = keccak256(
         "Order(address makerToken,address takerToken,uint256 makerAmount,uint256 takerAmount,address maker,address taker,uint256 expiration,uint256 salt)"
     );
 
-    bytes32 constant public RFQ_ORDER_TYPEHASH = keccak256(
-        "Order(address makerToken,address takerToken,uint256 makerAmount,uint256 takerAmount,uint256 makerTokenFeeAmount,uint256 takerFillAmount,address maker,address taker,uint256 expiration,uint256 slot)"
-    );
-
-
     // ============ Storage ============
     mapping(bytes32 => uint256) public _FILLED_TAKER_AMOUNT_; //limitOrder
-    mapping(address => mapping(uint256 => uint256)) public _RFQ_FILLED_TAKER_AMOUNT_; //RFQ
     
     mapping (address => bool) public isWhiteListed;
     mapping (address => bool) public isAdminListed;
@@ -69,8 +50,6 @@ contract DODOLimitOrder is EIP712("DODO Limit Order Protocol", "1"), Initializab
     
     // ============ Events =============
     event LimitOrderFilled(address indexed maker, address indexed taker, bytes32 orderHash, uint256 curTakerFillAmount, uint256 curMakerFillAmount);
-    event RFQByUserFilled(address indexed maker, address indexed taker, bytes32 orderHash, uint256 curTakerFillAmount, uint256 curMakerFillAmount);
-    event RFQByPlatformFilled(address indexed maker, address indexed taker, bytes32 orderHash, uint256 curTakerFillAmount, uint256 curMakerFillAmount);
     event AddWhileList(address addr);
     event RemoveWhiteList(address addr);
     event AddAdmin(address admin);
@@ -132,37 +111,6 @@ contract DODOLimitOrder is EIP712("DODO Limit Order Protocol", "1"), Initializab
         emit LimitOrderFilled(order.maker, msg.sender, orderHash, curTakerFillAmount, curMakerFillAmount);
     }
 
-
-    //================ RFQ ================
-    function matchingRFQByPlatform(
-        RfqOrder memory order,
-        bytes memory makerSignature,
-        bytes memory takerSignature,
-        uint256 takerFillAmount,
-        uint256 thresholdMakerAmount,
-        uint256 makerTokenFeeAmount,
-        address taker
-    ) public returns(uint256 curTakerFillAmount, uint256 curMakerFillAmount) {
-        require(isAdminListed[msg.sender], "ACCESS_DENIED");
-        uint256 filledTakerAmount = _RFQ_FILLED_TAKER_AMOUNT_[order.maker][order.slot];
-        require(filledTakerAmount < order.takerAmount, "DLOP: ALREADY_FILLED");
-
-        bytes32 orderHashForMaker = _rfqOrderHash(order);
-        require(ECDSA.recover(orderHashForMaker, makerSignature) == order.maker, "DLOP:INVALID_MAKER_SIGNATURE");
-        require(order.taker == address(0), "DLOP:TAKER_INVALID");
-
-        order.taker = taker;
-        order.makerTokenFeeAmount = makerTokenFeeAmount;
-        order.takerFillAmount = takerFillAmount;
-
-        bytes32 orderHashForTaker = _rfqOrderHash(order);
-        require(ECDSA.recover(orderHashForTaker, takerSignature) == taker, "DLOP:INVALID_TAKER_SIGNATURE");
-
-        (curTakerFillAmount, curMakerFillAmount) = _settleRFQ(order,filledTakerAmount,takerFillAmount,thresholdMakerAmount,taker);
-        
-        emit RFQByPlatformFilled(order.maker, taker, orderHashForMaker, curTakerFillAmount, curMakerFillAmount);
-    }
-
     //============  Ownable ============
     function addWhiteList (address contractAddr) public onlyOwner {
         isWhiteListed[contractAddr] = true;
@@ -190,38 +138,6 @@ contract DODOLimitOrder is EIP712("DODO Limit Order Protocol", "1"), Initializab
     }
 
     //============  internal ============
-    function _settleRFQ(
-        RfqOrder memory order,
-        uint256 filledTakerAmount,
-        uint256 takerFillAmount,
-        uint256 thresholdMakerAmount,
-        address taker
-    ) internal returns(uint256,uint256) {
-        require(order.expiration > block.timestamp, "DLOP: EXPIRE_ORDER");
-
-        uint256 leftTakerAmount = order.takerAmount.sub(filledTakerAmount);
-        require(takerFillAmount <= leftTakerAmount, "DLOP: RFQ_TAKER_AMOUNT_NOT_ENOUGH");
-        
-        uint256 curTakerFillAmount = takerFillAmount;
-        uint256 curMakerFillAmount = curTakerFillAmount.mul(order.makerAmount).div(order.takerAmount);
-
-        require(curTakerFillAmount > 0 && curMakerFillAmount > 0, "DLOP: ZERO_FILL_INVALID");
-        require(curMakerFillAmount.sub(order.makerTokenFeeAmount) >= thresholdMakerAmount, "DLOP: FILL_AMOUNT_NOT_ENOUGH");
-
-        _RFQ_FILLED_TAKER_AMOUNT_[order.maker][order.slot] = filledTakerAmount.add(curTakerFillAmount);
-
-        if(order.makerTokenFeeAmount > 0) {
-            IDODOApproveProxy(_DODO_APPROVE_PROXY_).claimTokens(order.makerToken, order.maker, _FEE_RECEIVER_, order.makerTokenFeeAmount);
-        }
-        //Maker => Taker
-        IDODOApproveProxy(_DODO_APPROVE_PROXY_).claimTokens(order.makerToken, order.maker, taker, curMakerFillAmount.sub(order.makerTokenFeeAmount));
-        //Taker => Maker
-        IDODOApproveProxy(_DODO_APPROVE_PROXY_).claimTokens(order.takerToken, taker, order.maker, curTakerFillAmount);
-
-        return (curTakerFillAmount, curMakerFillAmount);
-    }
-
-
     function _orderHash(Order memory order) private view returns(bytes32) {
         return _hashTypedDataV4(
             keccak256(
@@ -240,31 +156,11 @@ contract DODOLimitOrder is EIP712("DODO Limit Order Protocol", "1"), Initializab
         );
     }
 
-    function _rfqOrderHash(RfqOrder memory order) private view returns(bytes32) {
-        return _hashTypedDataV4(
-            keccak256(
-                abi.encode(
-                    RFQ_ORDER_TYPEHASH,
-                    order.makerToken,
-                    order.takerToken,
-                    order.makerAmount,
-                    order.takerAmount,
-                    order.makerTokenFeeAmount,
-                    order.takerFillAmount,
-                    order.maker,
-                    order.taker,
-                    order.expiration,
-                    order.slot
-                )
-            )
-        );
-    }
-
     function _verifyERC1271WalletSignature(
         address _addr,
         bytes32 _hash,
         bytes memory _signature
-    ) internal {
+    ) internal view {
         bytes4 result = IERC1271Wallet(_addr).isValidSignature(_hash, _signature);
         require(result == 0x1626ba7e, "INVALID_SIGNATURE");
     }
