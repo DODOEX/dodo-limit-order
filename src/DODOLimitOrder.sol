@@ -41,10 +41,8 @@ contract DODOLimitOrder is EIP712("DODO Limit Order Protocol", "1"), Initializab
     );
 
     // ============ Storage ============
-    mapping(bytes32 => uint256) public _FILLED_TAKER_AMOUNT_; //limitOrder
-    
+    mapping(bytes32 => uint256) public _FILLED_TAKER_AMOUNT_;
     mapping (address => bool) public isWhiteListed;
-    mapping (address => bool) public isAdminListed;
     address public _DODO_APPROVE_PROXY_;
     address public _FEE_RECEIVER_;
     
@@ -52,8 +50,6 @@ contract DODOLimitOrder is EIP712("DODO Limit Order Protocol", "1"), Initializab
     event LimitOrderFilled(address indexed maker, address indexed taker, bytes32 orderHash, uint256 curTakerFillAmount, uint256 curMakerFillAmount);
     event AddWhileList(address addr);
     event RemoveWhiteList(address addr);
-    event AddAdmin(address admin);
-    event RemoveAdmin(address admin);
     event ChangeFeeReceiver(address newFeeReceiver);
     
     function init(address owner, address dodoApproveProxy, address feeReciver) external {
@@ -120,16 +116,6 @@ contract DODOLimitOrder is EIP712("DODO Limit Order Protocol", "1"), Initializab
     function removeWhiteList (address contractAddr) public onlyOwner {
         isWhiteListed[contractAddr] = false;
         emit RemoveWhiteList(contractAddr);
-    }
-
-    function addAdminList (address userAddr) external onlyOwner {
-        isAdminListed[userAddr] = true;
-        emit AddAdmin(userAddr);
-    }
-
-    function removeAdminList (address userAddr) external onlyOwner {
-        isAdminListed[userAddr] = false;
-        emit RemoveAdmin(userAddr);
     }
 
     function changeFeeReceiver (address newFeeReceiver) public onlyOwner {
