@@ -48,7 +48,7 @@ contract DODOLimitOrder is EIP712("DODO Limit Order Protocol", "1"), Initializab
     
     // ============ Events =============
     event LimitOrderFilled(address indexed maker, address indexed taker, bytes32 orderHash, uint256 curTakerFillAmount, uint256 curMakerFillAmount);
-    event AddWhileList(address addr);
+    event AddWhiteList(address addr);
     event RemoveWhiteList(address addr);
     event ChangeFeeReceiver(address newFeeReceiver);
     
@@ -110,7 +110,7 @@ contract DODOLimitOrder is EIP712("DODO Limit Order Protocol", "1"), Initializab
     //============  Ownable ============
     function addWhiteList (address contractAddr) public onlyOwner {
         isWhiteListed[contractAddr] = true;
-        emit AddWhileList(contractAddr);
+        emit AddWhiteList(contractAddr);
     }
 
     function removeWhiteList (address contractAddr) public onlyOwner {
