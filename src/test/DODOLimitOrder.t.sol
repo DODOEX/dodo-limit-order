@@ -21,7 +21,7 @@ contract DODOLimitOrderTest is DODOLimitOrder, Test {
         wallet.addSignature(hash1, signature);
     }
 
-    function testVerifySignature() public {
+    function testVerifySignature() public view {
         _verifyERC1271WalletSignature(address(wallet), hash1, signature);
     }
 
