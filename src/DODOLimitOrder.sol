@@ -97,8 +97,12 @@ contract DODOLimitOrder is EIP712("DODO Limit Order Protocol", "1"), Initializab
             takerInteraction.patchUint256(0, curTakerFillAmount);
             takerInteraction.patchUint256(1, curMakerFillAmount);
             require(isWhiteListed[msg.sender], "DLOP: Not Whitelist Contract");
-            (bool success, ) = msg.sender.call(takerInteraction);
-            require(success, "DLOP: TAKER_INTERACTIVE_FAILED");
+            (bool success, bytes memory data) = msg.sender.call(takerInteraction);
+            if (!success) {
+                assembly {
+                    revert(add(data, 32), mload(data))
+                }
+            }
         }
 
         //Taker => Maker
