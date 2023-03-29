@@ -158,4 +158,9 @@ contract DODOLimitOrder is EIP712("DODO Limit Order Protocol", "1"), Initializab
     function _isContract(address account) internal view returns (bool) {
         return account.code.length > 0;
     }
+
+    //============ view ============
+    function version() external view returns (uint256) {
+        return 101;
+    }
 }

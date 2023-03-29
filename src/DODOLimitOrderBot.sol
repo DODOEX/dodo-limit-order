@@ -78,8 +78,12 @@ import {SafeERC20} from "./lib/SafeERC20.sol";
      
         _approveMax(IERC20(makerToken), _DODO_APPROVE_, curMakerFillAmount);
         
-        (bool success, ) = dodoRouteProxy.call(dodoApiData);
-        require(success, "API_SWAP_FAILED");
+        (bool success, bytes memory data) = dodoRouteProxy.call(dodoApiData);
+        if (!success) {
+            assembly {
+                revert(add(data, 32), mload(data))
+            }
+        }
 
         uint256 takerBalance = IERC20(takerToken).balanceOf(address(this));
         uint256 returnTakerAmount = takerBalance.sub(originTakerBalance);
@@ -116,5 +120,10 @@ import {SafeERC20} from "./lib/SafeERC20.sol";
             }
             token.safeApprove(to, type(uint256).max);
         }
+    }
+
+    //============ view ============
+    function version() external view returns (uint256) {
+        return 101;
     }
  }
