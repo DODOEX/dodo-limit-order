@@ -15,7 +15,7 @@ import { ethers } from "ethers"
 const RINKEBY_RPC = process.env.RINKEBY_RPC || '1'.repeat(32);
 const PRIVATE_KEY = process.env.PRIVATE_KEY || '1'.repeat(64);
 const TRUFFLE_DASHBOARD_RPC = "http://localhost:24012/rpc";
-const SOLC_DEFAULT = '0.8.10';
+const SOLC_DEFAULT = '0.8.4';
 
 // try use forge config
 let foundry: any;

@@ -51,8 +51,12 @@ import {SafeERC20} from "./lib/SafeERC20.sol";
         require(isAdminListed[msg.sender], "ACCESS_DENIED");
         uint256 originTakerBalance = IERC20(takerToken).balanceOf(address(this));
 
-        (bool success, ) = _DODO_LIMIT_ORDER_.call(callExternalData);
-        require(success, "EXEC_DODO_LIMIT_ORDER_ERROR");
+        (bool success, bytes memory data) = _DODO_LIMIT_ORDER_.call(callExternalData);
+        if (!success) {
+            assembly {
+                revert(add(data, 32), mload(data))
+            }
+        }
 
         uint256 takerBalance = IERC20(takerToken).balanceOf(address(this));
         uint256 leftTakerAmount = takerBalance.sub(originTakerBalance);
