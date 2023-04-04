@@ -11,4 +11,6 @@ node_modules
 coverage/
 coverage.json
 
+deployments/
+
 .DS_Store
