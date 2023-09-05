@@ -127,7 +127,7 @@ import {SafeERC20} from "./lib/SafeERC20.sol";
     }
 
     //============ view ============
-    function version() external view returns (uint256) {
+    function version() external pure returns (uint256) {
         return 101;
     }
  }

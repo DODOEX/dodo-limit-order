@@ -54,10 +54,30 @@ const config: HardhatUserConfig = {
       accounts: [PRIVATE_KEY],
       deploy: ["./deploy/rinkeby/"],
     },
+    arbitrum: {
+      url: TRUFFLE_DASHBOARD_RPC,
+      chainId: 42161,
+      deploy: ["./deploy/arbitrum/"],
+    },
     arbi_testnet: {
       url: TRUFFLE_DASHBOARD_RPC,
       chainId: 421611,
       deploy: ["./deploy/arbitrum_rinkeby/"],
+    },
+    polygon: {
+      url: TRUFFLE_DASHBOARD_RPC,
+      chainId: 137,
+      deploy: ["./deploy/polygon/"],
+    },
+    bsc: {
+      url: TRUFFLE_DASHBOARD_RPC,
+      chainId: 56,
+      deploy: ["./deploy/bsc/"],
+    },
+    eth: {
+      url: TRUFFLE_DASHBOARD_RPC,
+      chainId: 1,
+      deploy: ["./deploy/eth/"],
     },
     goerli: {
       url: TRUFFLE_DASHBOARD_RPC,
@@ -95,7 +115,11 @@ const config: HardhatUserConfig = {
     // API key for Etherscan. https://etherscan.io/
     apiKey: {
       mainnet: process.env.ETHERSCAN_API_KEY ?? '',
+      eth: process.env.ETHERSCAN_API_KEY ?? '',
+      arbitrumOne: process.env.ARBITRUM_API_KEY ?? '',
       arbi_testnet: "9RSHRSVHJYZA631TN23NXDD14E3EY7I1VW",
+      polygon: process.env.POLYGON_API_KEY ?? '',
+      bsc: process.env.BSC_API_KEY ?? '',
       goerli: "TRGAKHZ7J913ZX5KAAU491FK5MMKH3P9EN",
       kcc: "9l0cX20NCc2EHAF3VjN6"
     },

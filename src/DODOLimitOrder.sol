@@ -160,7 +160,7 @@ contract DODOLimitOrder is EIP712("DODO Limit Order Protocol", "1"), Initializab
     }
 
     //============ view ============
-    function version() external view returns (uint256) {
+    function version() external pure returns (uint256) {
         return 101;
     }
 }
