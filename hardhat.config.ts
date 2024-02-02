@@ -84,6 +84,11 @@ const config: HardhatUserConfig = {
       chainId: 5,
       deploy: ["./deploy/goerli/"],
     },
+    sepolia: {
+      url: TRUFFLE_DASHBOARD_RPC,
+      chainId: 11155111,
+      deploy: ["./deploy/sepolia/"],
+    },
     kcc: {
       url: TRUFFLE_DASHBOARD_RPC,
       chainId: 321,
@@ -115,6 +120,7 @@ const config: HardhatUserConfig = {
     // API key for Etherscan. https://etherscan.io/
     apiKey: {
       mainnet: process.env.ETHERSCAN_API_KEY ?? '',
+      sepolia: process.env.SEPOLIA_API_KEY ?? '',
       eth: process.env.ETHERSCAN_API_KEY ?? '',
       arbitrumOne: process.env.ARBITRUM_API_KEY ?? '',
       arbi_testnet: "9RSHRSVHJYZA631TN23NXDD14E3EY7I1VW",
