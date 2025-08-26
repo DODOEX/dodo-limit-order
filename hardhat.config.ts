@@ -3,7 +3,7 @@ dotenv.config();
 import { readFileSync } from 'fs';
 import * as toml from 'toml';
 import '@nomiclabs/hardhat-ethers';
-import '@nomiclabs/hardhat-etherscan';
+import "@nomicfoundation/hardhat-verify";
 import 'hardhat-gas-reporter';
 import 'solidity-coverage';
 import { HardhatUserConfig, subtask } from 'hardhat/config';
@@ -53,6 +53,12 @@ const config: HardhatUserConfig = {
       chainId: 4,
       accounts: [PRIVATE_KEY],
       deploy: ["./deploy/rinkeby/"],
+    },
+    monad_testnet: {
+      url: "https://testnet-rpc.monad.xyz/",
+      chainId: 10143,
+      accounts: [PRIVATE_KEY],
+      deploy: ["./deploy/monad_testnet/"],
     },
     arbitrum: {
       url: TRUFFLE_DASHBOARD_RPC,
@@ -116,7 +122,13 @@ const config: HardhatUserConfig = {
     // API key for CoinMarketCap. https://pro.coinmarketcap.com/signup
     coinmarketcap: process.env.CMC_KEY ?? '',
   },
+  sourcify: {
+    enabled: true,
+    apiUrl: "https://sourcify-api-monad.blockvision.org",
+    browserUrl: "https://testnet.monadexplorer.com"
+  },
   etherscan: {
+    // enabled: false, // if you want to use sourcify to verify, uncomment this
     // API key for Etherscan. https://etherscan.io/
     apiKey: {
       mainnet: process.env.ETHERSCAN_API_KEY ?? '',
