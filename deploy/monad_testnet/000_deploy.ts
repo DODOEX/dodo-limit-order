@@ -10,10 +10,15 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   await main();
 
   async function main() {
-    await deployLimitOrder();
-    await deployLimitOrderBot();
-    await setupLimitOrder();
-    await setupLimitOrderBot();
+    // await deployLimitOrder();
+    // await deployLimitOrderBot();
+    // await setupLimitOrder();
+    // await setupLimitOrderBot();
+    
+    // await deploySIGMAXLimitOrder();
+    // await deploySIGMAXLimitOrderBot();
+    await setupSIGMAXLimitOrder();
+    await setupSIGMAXLimitOrderBot();
   }
 
   async function deployContract(name: string, contract: string, args: any[]) {
@@ -80,6 +85,37 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     );
     console.log("DODOLimitOrderBot.addAdminList()...");
     await DODOLimitOrderBot.addAdminList(config.Admin);
+  }
+
+  async function deploySIGMAXLimitOrder() {
+    await deployContract("SIGMAXLimitOrder", "SIGMAXLimitOrder", []);
+  }
+
+  async function deploySIGMAXLimitOrderBot() {
+    await deployContract("SIGMAXLimitOrderBot", "SIGMAXLimitOrderBot", []);
+  }
+
+  async function setupSIGMAXLimitOrder() {
+    const contractAddress = config.SIGMAXLimitOrder;
+    const SIGMAXLimitOrder = await ethers.getContractAt("SIGMAXLimitOrder", contractAddress);
+    console.log("SIGMAXLimitOrder.init()...");
+    await SIGMAXLimitOrder.init(deployer, config.SIGMAXApproveProxy, config.FeeReceiver);
+    console.log("SIGMAXLimitOrder.addWhiteList()...");
+    await SIGMAXLimitOrder.addWhiteList(config.SIGMAXLimitOrderBot);
+  }
+
+  async function setupSIGMAXLimitOrderBot() {
+    const contractAddress = config.SIGMAXLimitOrderBot;
+    const SIGMAXLimitOrderBot = await ethers.getContractAt("SIGMAXLimitOrderBot", contractAddress);
+    console.log("SIGMAXLimitOrderBot.init()...");
+    await SIGMAXLimitOrderBot.init(
+      deployer,
+      config.SIGMAXLimitOrder,
+      config.FeeReceiver,
+      config.SIGMAXApprove
+    );
+    console.log("SIGMAXLimitOrderBot.addAdminList()...");
+    await SIGMAXLimitOrderBot.addAdminList(config.Admin);
   }
 };
 

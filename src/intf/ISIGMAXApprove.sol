@@ -1,0 +1,13 @@
+/*
+
+    Copyright 2025 SIGMAX
+    SPDX-License-Identifier: Apache-2.0
+
+*/
+
+pragma solidity 0.8.4;
+
+interface ISIGMAXApprove {
+    function claimTokens(address token,address who,address dest,uint256 amount) external;
+    function getSIGMAXProxy() external view returns (address);
+}

@@ -55,7 +55,7 @@ const config: HardhatUserConfig = {
       deploy: ["./deploy/rinkeby/"],
     },
     monad_testnet: {
-      url: "https://testnet-rpc.monad.xyz/",
+      url: "https://monad-testnet.drpc.org",
       chainId: 10143,
       accounts: [PRIVATE_KEY],
       deploy: ["./deploy/monad_testnet/"],
@@ -128,7 +128,7 @@ const config: HardhatUserConfig = {
     browserUrl: "https://testnet.monadexplorer.com"
   },
   etherscan: {
-    // enabled: false, // if you want to use sourcify to verify, uncomment this
+    enabled: false, // if you want to use sourcify to verify, uncomment this
     // API key for Etherscan. https://etherscan.io/
     apiKey: {
       mainnet: process.env.ETHERSCAN_API_KEY ?? '',
