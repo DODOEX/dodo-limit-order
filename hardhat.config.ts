@@ -60,6 +60,12 @@ const config: HardhatUserConfig = {
       accounts: [PRIVATE_KEY],
       deploy: ["./deploy/monad_testnet/"],
     },
+    stable_testnet: {
+      url: "https://rpc.testnet.stable.xyz",
+      chainId: 2201,
+      accounts: [PRIVATE_KEY],
+      deploy: ["./deploy/stable_testnet/"],
+    },
     arbitrum: {
       url: TRUFFLE_DASHBOARD_RPC,
       chainId: 42161,
@@ -123,12 +129,12 @@ const config: HardhatUserConfig = {
     coinmarketcap: process.env.CMC_KEY ?? '',
   },
   sourcify: {
-    enabled: true,
+    enabled: false,
     apiUrl: "https://sourcify-api-monad.blockvision.org",
     browserUrl: "https://testnet.monadexplorer.com"
   },
   etherscan: {
-    enabled: false, // if you want to use sourcify to verify, uncomment this
+    // enabled: false, // if you want to use sourcify to verify, uncomment this
     // API key for Etherscan. https://etherscan.io/
     apiKey: {
       mainnet: process.env.ETHERSCAN_API_KEY ?? '',
@@ -139,7 +145,8 @@ const config: HardhatUserConfig = {
       polygon: process.env.POLYGON_API_KEY ?? '',
       bsc: process.env.BSC_API_KEY ?? '',
       goerli: "TRGAKHZ7J913ZX5KAAU491FK5MMKH3P9EN",
-      kcc: "9l0cX20NCc2EHAF3VjN6"
+      kcc: "9l0cX20NCc2EHAF3VjN6",
+      stable_testnet: process.env.ETHERSCAN_API_KEY ?? ''
     },
     customChains: [
       {
@@ -164,6 +171,14 @@ const config: HardhatUserConfig = {
         urls: {
           apiURL: "https://api.explorer.kcc.io/vipapi",
           browserURL: "https://explorer.kcc.io/"
+        }
+      },
+      {
+        network: "stable_testnet",
+        chainId: 2201,
+        urls: {
+          apiURL: "https://api.etherscan.io/v2/api?chainid=2201",
+          browserURL: "https://testnet.stablescan.xyz"
         }
       }
     ]
