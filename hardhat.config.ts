@@ -60,6 +60,12 @@ const config: HardhatUserConfig = {
       accounts: [PRIVATE_KEY],
       deploy: ["./deploy/monad_testnet/"],
     },
+    monad_private: {
+      url: "https://rpc-mainnet.monadinfra.com/rpc/VG865gUhX5I0G38kK4onvld09FhukEyP",
+      chainId: 143,
+      accounts: [PRIVATE_KEY],
+      deploy: ["./deploy/monad_private/"],
+    },
     stable_testnet: {
       url: "https://rpc.testnet.stable.xyz",
       chainId: 2201,
@@ -131,7 +137,7 @@ const config: HardhatUserConfig = {
   sourcify: {
     enabled: false,
     apiUrl: "https://sourcify-api-monad.blockvision.org",
-    browserUrl: "https://testnet.monadexplorer.com"
+    browserUrl: "https://monadvision.com"
   },
   etherscan: {
     // enabled: false, // if you want to use sourcify to verify, uncomment this
