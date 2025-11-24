@@ -72,6 +72,12 @@ const config: HardhatUserConfig = {
       accounts: [PRIVATE_KEY],
       deploy: ["./deploy/stable_testnet/"],
     },
+    stable: {
+      url: "https://partners-rpc.stable.xyz/dodo.88b3272adaac2ddaa08f13c049824412d7bffe24a2c760089f6c480115ac00e1/",
+      chainId: 988,
+      accounts: [PRIVATE_KEY],
+      deploy: ["./deploy/stable/"],
+    },
     arbitrum: {
       url: TRUFFLE_DASHBOARD_RPC,
       chainId: 42161,
@@ -185,6 +191,14 @@ const config: HardhatUserConfig = {
         urls: {
           apiURL: "https://api.etherscan.io/v2/api?chainid=2201",
           browserURL: "https://testnet.stablescan.xyz"
+        }
+      },
+      {
+        network: "stable",
+        chainId: 988,
+        urls: {
+          apiURL: "https://api.etherscan.io/v2/api?chainid=988",
+          browserURL: "https://stablescan.xyz/"
         }
       }
     ]
