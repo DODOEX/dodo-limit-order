@@ -158,7 +158,8 @@ const config: HardhatUserConfig = {
       bsc: process.env.BSC_API_KEY ?? '',
       goerli: "TRGAKHZ7J913ZX5KAAU491FK5MMKH3P9EN",
       kcc: "9l0cX20NCc2EHAF3VjN6",
-      stable_testnet: process.env.ETHERSCAN_API_KEY ?? ''
+      stable_testnet: process.env.ETHERSCAN_API_KEY ?? '',
+      stable: process.env.ETHERSCAN_API_KEY ?? ''
     },
     customChains: [
       {

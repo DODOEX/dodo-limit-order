@@ -13,7 +13,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     // await deploySETTLEXLimitOrder();
     // await deploySETTLEXLimitOrderBot();
     // await setupSETTLEXLimitOrder();
-    await setupSETTLEXLimitOrderBot();
+    // await setupSETTLEXLimitOrderBot();
   }
 
   async function deployContract(name: string, contract: string, args: any[]) {
